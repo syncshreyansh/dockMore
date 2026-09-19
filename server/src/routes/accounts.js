@@ -48,16 +48,32 @@ router.get('/', async (req, res) => {
       .where({ user_id: req.user.id })
       .orderBy('created_at', 'desc');
 
-    const formatted = accounts.map((acc) => {
+    const formatted = await Promise.all(accounts.map(async (acc) => {
       const provKey = normalizeProvider(acc.provider);
+      
+      let usedStorageGB = 0;
+      let totalStorageGB = 15;
+      
+      try {
+        const accessToken = await getValidAccessToken(acc.id);
+        const provider = getProvider(acc.provider);
+        const storage = await provider.getStorageInfo(accessToken);
+        if (storage) {
+          usedStorageGB = storage.used ? Number((storage.used / (1024 ** 3)).toFixed(1)) : 0;
+          totalStorageGB = storage.total ? Number((storage.total / (1024 ** 3)).toFixed(1)) : 15;
+        }
+      } catch (e) {
+        console.error(`[accounts GET /] Failed to fetch storage for account ${acc.id}:`, e.message);
+      }
+
       return {
         id: acc.id,
         provider: provKey,
         providerName: getProviderDisplayName(provKey),
         name: `${getProviderDisplayName(provKey)} (${acc.account_email})`,
         email: acc.account_email,
-        usedStorageGB: 0,
-        totalStorageGB: 15,
+        usedStorageGB,
+        totalStorageGB,
         status: acc.status || 'active',
         lastSynced: acc.last_synced_at
           ? new Date(acc.last_synced_at).toLocaleString()
@@ -65,7 +81,7 @@ router.get('/', async (req, res) => {
         fileCount: 0,
         createdAt: acc.created_at,
       };
-    });
+    }));
 
     return res.json(formatted);
   } catch (err) {
@@ -89,14 +105,29 @@ router.get('/:accountId', async (req, res) => {
     }
 
     const provKey = normalizeProvider(account.provider);
+    let usedStorageGB = 0;
+    let totalStorageGB = 15;
+    
+    try {
+      const accessToken = await getValidAccessToken(account.id);
+      const provider = getProvider(account.provider);
+      const storage = await provider.getStorageInfo(accessToken);
+      if (storage) {
+        usedStorageGB = storage.used ? Number((storage.used / (1024 ** 3)).toFixed(1)) : 0;
+        totalStorageGB = storage.total ? Number((storage.total / (1024 ** 3)).toFixed(1)) : 15;
+      }
+    } catch (e) {
+      console.error(`[accounts GET /${accountId}] Failed to fetch storage:`, e.message);
+    }
+
     return res.json({
       id: account.id,
       provider: provKey,
       providerName: getProviderDisplayName(provKey),
       name: `${getProviderDisplayName(provKey)} (${account.account_email})`,
       email: account.account_email,
-      usedStorageGB: 0,
-      totalStorageGB: 15,
+      usedStorageGB,
+      totalStorageGB,
       status: account.status || 'active',
       lastSynced: account.last_synced_at
         ? new Date(account.last_synced_at).toLocaleString()
