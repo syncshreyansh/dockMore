@@ -19,15 +19,15 @@ export default function Settings() {
   const { showToast } = useToast();
   const avatarInputRef = useRef(null);
 
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'appearance', 'notifications', 'security'
+  const [activeTab, setActiveTab] = useState('profile'); 
 
-  // Profile Form State
+  
   const [name, setName] = useState(user?.name || 'Shreyansh Singh');
   const [email, setEmail] = useState(user?.email || 'mailshreyanshhere@gmail.com');
   const [jobTitle, setJobTitle] = useState('Product Engineer & Designer');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Preferences State
+  
   const [autoSync, setAutoSync] = useState(true);
   const [notifyTransfers, setNotifyTransfers] = useState(true);
   const [notifyLowStorage, setNotifyLowStorage] = useState(true);
@@ -78,9 +78,9 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Main Settings Grid: Left Sub-Nav + Right Content Card */}
+      
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        {/* Left Sub-nav */}
+        
         <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-1.5 bg-sidebar/50 p-2 rounded-2xl select-none">
           {navTabs.map((tab) => {
             const Icon = tab.icon;
@@ -115,9 +115,9 @@ export default function Settings() {
           })}
         </div>
 
-        {/* Right Content Card */}
+        
         <div className="md:col-span-8 lg:col-span-9 bg-surface rounded-3xl p-6 sm:p-8 flex flex-col gap-6">
-          {/* Tab 1: Profile */}
+          
           {activeTab === 'profile' && (
             <form onSubmit={handleSave} className="flex flex-col gap-6">
               <div>
@@ -127,7 +127,7 @@ export default function Settings() {
                 </p>
               </div>
 
-              {/* Avatar Row */}
+              
               <div className="flex items-center gap-5 pt-2">
                 <input
                   type="file"
@@ -219,7 +219,7 @@ export default function Settings() {
             </form>
           )}
 
-          {/* Tab 2: Storage Preferences */}
+          
           {activeTab === 'appearance' && (
             <div className="flex flex-col gap-6">
               <div>
@@ -301,7 +301,7 @@ export default function Settings() {
             </div>
           )}
 
-          {/* Tab 3: Notifications */}
+          
           {activeTab === 'notifications' && (
             <div className="flex flex-col gap-6">
               <div>
@@ -365,7 +365,7 @@ export default function Settings() {
             </div>
           )}
 
-          {/* Tab 4: Security */}
+          
           {activeTab === 'security' && (
             <div className="flex flex-col gap-6">
               <div>

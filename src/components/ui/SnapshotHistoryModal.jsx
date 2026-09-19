@@ -19,7 +19,7 @@ export default function SnapshotHistoryModal({
       onClose={onClose}
       panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-2xl w-full flex flex-col gap-5 relative shadow-2xl"
     >
-      {/* Header */}
+      
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -45,7 +45,7 @@ export default function SnapshotHistoryModal({
         </button>
       </div>
 
-      {/* Cloud Mirror Info Banner */}
+      
       <div className="flex items-center justify-between p-3 rounded-2xl bg-white border border-track/40 text-xs">
         <div className="flex items-center gap-2 min-w-0">
           <ProviderIcon provider={project.provider} size="xs" />
@@ -58,7 +58,7 @@ export default function SnapshotHistoryModal({
         </span>
       </div>
 
-      {/* Snapshots List (Using the SAME visual language as FileRow.jsx) */}
+      
       <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto pr-1 select-none sidebar-scroll">
         {snapshots.length === 0 ? (
           <div className="py-10 text-center text-xs text-muted">
@@ -70,7 +70,7 @@ export default function SnapshotHistoryModal({
               key={snapshot.id}
               className="group flex items-center justify-between py-3 px-4 rounded-xl cursor-default select-none transition-all duration-150 ease-out bg-white hover:bg-[#303030] shadow-sm"
             >
-              {/* Left: Icon in small square + Summary + Details */}
+              
               <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
                 <div className="w-9 h-9 rounded-lg bg-track/40 group-hover:bg-white/15 flex items-center justify-center text-ink group-hover:text-white shrink-0 transition-colors duration-150">
                   <GitCommit className="w-4 h-4" />
@@ -96,7 +96,7 @@ export default function SnapshotHistoryModal({
                 </div>
               </div>
 
-              {/* Right: Timestamp */}
+              
               <div className="text-right shrink-0">
                 <span className="text-xs text-muted group-hover:text-white/70 transition-colors duration-150">
                   {snapshot.timestamp}
@@ -107,7 +107,7 @@ export default function SnapshotHistoryModal({
         )}
       </div>
 
-      {/* Footer Notice & Actions */}
+      
       <div className="flex items-center justify-between pt-3 border-t border-track/40 mt-1">
         <div className="flex items-center gap-1.5 text-[11px] text-muted">
           <ShieldCheck className="w-3.5 h-3.5 text-ink/70 shrink-0" />

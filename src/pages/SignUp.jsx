@@ -32,7 +32,7 @@ export default function SignUp() {
       setLoading(true);
       setError(null);
       const data = await signUp(email, password, name);
-      // Check if email confirmation is required by Supabase project
+      
       if (data?.user && !data?.session) {
         setConfirmationNotice(true);
       } else {

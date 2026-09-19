@@ -1,10 +1,6 @@
 ﻿import React from 'react';
 
-/**
- * ProgressBar
- * Track: #D9D8D6 (Tailwind bg-track)
- * Fill: #2A2A2A (Tailwind bg-progress)
- */
+
 export default function ProgressBar({
   value = 0,
   max = 100,

@@ -22,11 +22,7 @@ If nothing is found, return an empty JSON array: []
 Do not include any explanation, markdown formatting, or text outside the JSON array.
 The first character of your response must be '[' and the last must be ']'.`;
 
-/**
- * Review a diff for security and quality issues.
- * @param {string} diffText  Raw output of `git diff`
- * @returns {Promise<{ warnings: string[] }>}
- */
+
 async function codeGuardian(diffText) {
   const truncated = diffText.length > MAX_DIFF_CHARS
     ? diffText.slice(0, MAX_DIFF_CHARS) + '\n... [diff truncated]'
@@ -34,7 +30,7 @@ async function codeGuardian(diffText) {
 
   const response = await groq.chat.completions.create({
     model: MODEL,
-    temperature: 0.1,   // very low temp → consistent, literal output
+    temperature: 0.1,   
     max_tokens: 512,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -44,13 +40,13 @@ async function codeGuardian(diffText) {
 
   const raw = response.choices[0].message.content.trim();
 
-  // Safe JSON parse — never let a bad model response crash the request
+  
   try {
     const parsed = JSON.parse(raw);
     const warnings = Array.isArray(parsed) ? parsed.map(String) : [];
     return { warnings };
   } catch {
-    // If the model returned non-JSON, log it and return empty so the flow continues
+    
     console.warn('[codeGuardian] Failed to parse model response as JSON:', raw.slice(0, 200));
     return { warnings: [] };
   }

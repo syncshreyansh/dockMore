@@ -40,7 +40,7 @@ export function FilesProvider({ children }) {
     fetchFilesAndFolders();
   }, [fetchFilesAndFolders]);
 
-  // Dynamically compute stats from real accounts and files
+  
   const stats = useMemo(() => {
     if (!accounts || accounts.length === 0) {
       return {

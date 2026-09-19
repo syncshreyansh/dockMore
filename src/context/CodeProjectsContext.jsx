@@ -86,12 +86,12 @@ export function CodeProjectsProvider({ children }) {
 
   const getSnapshots = useCallback(
     (projectId) => {
-      // If we already fetched it recently, return it.
-      // But Code.jsx calls this synchronously. 
-      // It's better to fetch them and update the `snapshots` state.
-      // We will trigger a fetch if it's empty, and return the current state.
+      
+      
+      
+      
       if (!snapshots[projectId]) {
-        // Fire-and-forget fetch
+        
         getProjectSnapshots(projectId).then(snaps => {
           setSnapshots(prev => ({ ...prev, [projectId]: snaps }));
         }).catch(console.error);

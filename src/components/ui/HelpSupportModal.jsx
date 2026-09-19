@@ -68,7 +68,7 @@ export default function HelpSupportModal({ isOpen, onClose }) {
         </button>
       </div>
 
-      {/* FAQs Section */}
+      
       <div className="flex flex-col gap-2.5">
         <h4 className="text-xs font-bold uppercase tracking-wider text-muted font-sans">
           Frequently Asked Questions
@@ -104,7 +104,7 @@ export default function HelpSupportModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* Contact Form */}
+      
       <form onSubmit={handleSendMessage} className="flex flex-col gap-3.5 pt-2" noValidate>
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-ink" />

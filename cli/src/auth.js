@@ -5,10 +5,10 @@ import { request } from './api.js';
 import { setToken, getToken } from './config.js';
 
 const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 120_000; // 2 minutes
+const POLL_TIMEOUT_MS = 120_000; 
 
 export async function login() {
-  // Check if already logged in
+  
   const existing = getToken();
   if (existing) {
     console.log(chalk.green('✓ You are already logged in.'));
@@ -19,7 +19,7 @@ export async function login() {
   const spinner = ora('Starting login session...').start();
 
   try {
-    // 1. Start a CLI login session (no auth needed)
+    
     const { sessionId, verificationUrl } = await request('/api/cli/login/start', {
       method: 'POST',
     });
@@ -34,10 +34,10 @@ export async function login() {
     console.log(chalk.cyan(`  ${verificationUrl}`));
     console.log();
 
-    // 2. Open browser
+    
     await open(verificationUrl);
 
-    // 3. Poll for completion
+    
     const pollSpinner = ora('Waiting for browser sign-in...').start();
     const startTime = Date.now();
 
@@ -57,9 +57,9 @@ export async function login() {
           console.log(chalk.dim('  Run `dockmore -help` to see available commands.'));
           return;
         }
-        // result.pending === true, keep polling
+        
       } catch (err) {
-        // Transient network error — keep trying
+        
         if (err.status && err.status >= 400) {
           pollSpinner.fail(chalk.red(`Login failed: ${err.message}`));
           return;

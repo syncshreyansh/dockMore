@@ -6,12 +6,7 @@ import ConfirmModal from './ConfirmModal';
 import { useFiles } from '../../hooks/useFiles';
 import { useToast } from '../../context/ToastContext';
 
-/**
- * FolderCard
- * Clean minimal folder card with stacked tab layers that invert on hover.
- * - Default: Back tab = #303030 (bg-ink), Front card = White (bg-white)
- * - Hover: Back tab = White (bg-white), Front card = #303030 (bg-ink)
- */
+
 export default function FolderCard({ folder, onClick, className = '' }) {
   const navigate = useNavigate();
   const { renameFolder, deleteFolder } = useFiles();
@@ -62,13 +57,13 @@ export default function FolderCard({ folder, onClick, className = '' }) {
   return (
     <>
       <div className={`group relative pt-4 cursor-pointer select-none ${className}`}>
-        {/* Stacked Back Tab Layer: inverts to white on hover */}
+        
         <div
           className="absolute inset-x-3 top-0 h-11 bg-ink group-hover:bg-white rounded-figma z-0 transition-colors duration-150 ease-out shadow-sm"
           aria-hidden="true"
         />
 
-        {/* Front Folder Card: inverts to ink (#303030) on hover */}
+        
         <div
           onClick={handleCardClick}
           onContextMenu={(e) => {
@@ -78,7 +73,7 @@ export default function FolderCard({ folder, onClick, className = '' }) {
           }}
           className="relative z-10 bg-white group-hover:bg-ink rounded-figma p-5 flex items-center justify-between min-h-[86px] shadow-sm transition-colors duration-150 ease-out"
         >
-          {/* Left: Folder icon + Name */}
+          
           <div className="flex items-center gap-3 min-w-0">
             <div className="text-ink group-hover:text-white shrink-0 transition-colors duration-150">
               <Folder className="w-5 h-5 stroke-[1.75]" />
@@ -101,7 +96,7 @@ export default function FolderCard({ folder, onClick, className = '' }) {
               <MoreVertical className="w-4 h-4" />
             </button>
 
-            {/* Dropdown Menu */}
+            
             {menuOpen && (
               <div
                 className="absolute right-0 top-full mt-1 bg-white border border-track/60 shadow-[0_4px_24px_rgba(0,0,0,0.14)] rounded-2xl p-1.5 min-w-[140px] z-50 flex flex-col gap-1 text-ink"

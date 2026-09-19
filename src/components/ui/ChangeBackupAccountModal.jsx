@@ -17,7 +17,7 @@ export default function ChangeBackupAccountModal({
 
   const [selectedAccountId, setSelectedAccountId] = useState('');
 
-  // Sync selected account whenever modal opens or project changes
+  
   useEffect(() => {
     if (project && accounts.length > 0) {
       const match =
@@ -56,7 +56,7 @@ export default function ChangeBackupAccountModal({
       onClose={onClose}
       panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-2xl"
     >
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center shrink-0">
@@ -80,7 +80,7 @@ export default function ChangeBackupAccountModal({
         </button>
       </div>
 
-      {/* Account selection list */}
+      
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
           {accounts.map((acc) => {
@@ -136,7 +136,7 @@ export default function ChangeBackupAccountModal({
           })}
         </div>
 
-        {/* Footer Actions */}
+        
         <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-black/5">
           <PillButton
             type="button"

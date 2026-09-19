@@ -15,29 +15,29 @@ const LETTERS = [
 ];
 
 export default function SyncButton({ onSync, isSyncingProp }) {
-  const [internalStatus, setInternalStatus] = useState('idle'); // idle, syncing, success
+  const [internalStatus, setInternalStatus] = useState('idle'); 
 
   const handleClick = async () => {
     if (internalStatus !== 'idle') return;
     
     setInternalStatus('syncing');
     
-    // Trigger the parent's sync function
+    
     if (onSync) onSync();
     
-    // Simulate a minimum animation time so the user actually sees the cool effect
+    
     setTimeout(() => {
       setInternalStatus('success');
       
-      // Reset back to idle after showing the checkmark for a bit
+      
       setTimeout(() => {
         setInternalStatus('idle');
       }, 1500);
       
-    }, 2500); // The text animation will play for 2.5 seconds
+    }, 2500); 
   };
 
-  // If parent forces syncing state (optional fallback)
+  
   const status = isSyncingProp ? 'syncing' : internalStatus;
 
   return (
@@ -110,7 +110,7 @@ export default function SyncButton({ onSync, isSyncingProp }) {
         )}
       </AnimatePresence>
       
-      {/* Invisible placeholder to maintain the button's width regardless of absolute children */}
+      
       <div className="opacity-0 flex items-center gap-1.5 pointer-events-none">
         <RefreshCw className="w-3.5 h-3.5" />
         <span>Sync now</span>

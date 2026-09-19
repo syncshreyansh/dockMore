@@ -1,12 +1,7 @@
 ﻿import React, { useRef, useLayoutEffect, useState, useCallback } from 'react';
 import gsap from 'gsap';
 
-/**
- * SlideUpModal
- * Wraps any modal with a continuous upward kinetic flow:
- * - Opening: Slides UP from bottom of viewport to center with ease-in-out + motion blur (no opacity fade on modal).
- * - Closing: Slides UP out of top of viewport with ease-in-out + motion blur (no opacity fade on modal).
- */
+
 export default function SlideUpModal({
   isOpen,
   onClose,
@@ -18,12 +13,12 @@ export default function SlideUpModal({
   const panelRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Mount immediately when isOpen becomes true
+  
   if (isOpen && !isMounted) {
     setIsMounted(true);
   }
 
-  // Run GSAP animations synchronously before paint
+  
   useLayoutEffect(() => {
     if (!isMounted) return;
 
@@ -35,17 +30,17 @@ export default function SlideUpModal({
     const topDistance = typeof window !== 'undefined' ? -(window.innerHeight + 150) : -1000;
 
     if (isOpen) {
-      // ── Entry animation: Slide UP from bottom to center ──
+      
       gsap.killTweensOf([overlay, panel]);
 
-      // Backdrop overlay fades in
+      
       gsap.fromTo(
         overlay,
         { opacity: 0 },
         { opacity: 1, duration: 0.35, ease: 'power2.inOut' }
       );
 
-      // Panel slides UP from below viewport with motion blur, no opacity fade on panel
+      
       gsap.fromTo(
         panel,
         { y: bottomDistance, filter: 'blur(16px)', opacity: 1, scale: 1 },
@@ -56,11 +51,11 @@ export default function SlideUpModal({
           scale: 1,
           duration: 0.55,
           ease: 'power3.inOut',
-          clearProps: 'filter', // Remove filter after animation for crisp text
+          clearProps: 'filter', 
         }
       );
     } else {
-      // ── Exit animation: Slide UP out of top ──
+      
       gsap.killTweensOf([overlay, panel]);
 
       const tl = gsap.timeline({
@@ -69,7 +64,7 @@ export default function SlideUpModal({
         },
       });
 
-      // Panel slides UP past top of viewport with motion blur, no opacity fade on panel
+      
       tl.to(panel, {
         y: topDistance,
         filter: 'blur(14px)',
@@ -78,7 +73,7 @@ export default function SlideUpModal({
         ease: 'power3.inOut',
       });
 
-      // Backdrop fades out near the end of the slide
+      
       tl.to(
         overlay,
         { opacity: 0, duration: 0.25, ease: 'power2.inOut' },

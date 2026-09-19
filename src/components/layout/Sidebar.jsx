@@ -32,7 +32,7 @@ export default function Sidebar({ onCloseMobile }) {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const profileRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  
   useEffect(() => {
     function handleClickOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -59,14 +59,14 @@ export default function Sidebar({ onCloseMobile }) {
   return (
     <>
       <aside className="sidebar-scroll w-[260px] lg:w-[290px] h-full bg-sidebar flex flex-col justify-between py-6 px-5 lg:px-7 shrink-0 overflow-y-auto md:overflow-y-hidden md:hover:overflow-y-auto select-none [scrollbar-gutter:stable]">
-        {/* Top Section */}
+        
         <div className="flex flex-col gap-5">
-          {/* Logo */}
+          
           <div className="px-1 pt-2 pb-3">
             <Logo />
           </div>
 
-          {/* Primary Navigation: Home, All Files, Transfers, Code */}
+          
           <nav className="flex flex-col gap-1">
             <NavItem
               to="/"
@@ -95,10 +95,10 @@ export default function Sidebar({ onCloseMobile }) {
             />
           </nav>
 
-          {/* Thin Divider */}
+          
           <div className="border-t border-track my-0.5" />
 
-          {/* Cloud Accounts Section Header */}
+          
           <div>
             <div className="flex items-center justify-between px-1 mb-3">
               <div className="flex items-center gap-2 text-muted">
@@ -121,7 +121,7 @@ export default function Sidebar({ onCloseMobile }) {
               </button>
             </div>
 
-            {/* Connected Accounts List */}
+            
             <div className="flex flex-col gap-2.5 max-h-[260px] overflow-y-auto pr-1 sidebar-scroll">
               {accountsLoading ? (
                 <div className="px-2 py-2 text-xs text-muted">
@@ -147,12 +147,12 @@ export default function Sidebar({ onCloseMobile }) {
           </div>
         </div>
 
-        {/* Bottom Section */}
+        
         <div className="flex flex-col gap-3 mt-auto pt-8">
-          {/* Thin Divider */}
+          
           <div className="border-t border-track mb-1" />
 
-          {/* Settings & Help Nav Items */}
+          
           <div className="flex flex-col gap-1">
             <NavItem
               to="/settings"
@@ -174,9 +174,9 @@ export default function Sidebar({ onCloseMobile }) {
             </button>
           </div>
 
-          {/* User Profile Card */}
+          
           <div className="relative mt-1" ref={profileRef}>
-            {/* Popover Dropdown */}
+            
             {menuOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 p-1.5 bg-sidebar border border-track rounded-figma shadow-sm z-50 flex flex-col gap-1 transition-all duration-150">
                 <button
@@ -218,7 +218,7 @@ export default function Sidebar({ onCloseMobile }) {
               </div>
             )}
 
-            {/* Profile Card Button */}
+            
             <div
               onClick={() => setMenuOpen(!menuOpen)}
               className="hover:bg-black/5 rounded-figma px-4 py-3 flex items-center justify-between transition-colors duration-150 cursor-pointer select-none"

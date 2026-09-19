@@ -2,9 +2,7 @@ import { supabase } from './supabase';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-/**
- * Helper to fetch current Supabase session access token
- */
+
 async function getAuthToken() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -15,9 +13,7 @@ async function getAuthToken() {
   }
 }
 
-/**
- * Core HTTP request wrapper attaching Supabase JWT Bearer token
- */
+
 async function request(endpoint, options = {}) {
   const token = await getAuthToken();
 

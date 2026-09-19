@@ -1,10 +1,6 @@
 ﻿import React from 'react';
 
-/**
- * StatCard
- * Card/panel background: bg-surface, bg-sidebar, or bg-white
- * Rounded corners: figma (14px)
- */
+
 export default function StatCard({
   title,
   titleSubtitle,

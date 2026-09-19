@@ -1,13 +1,4 @@
-/**
- * CLI Authentication Routes
- *
- * These routes handle the CLI ↔ browser login handshake.
- * They do NOT require auth — the whole point is to acquire a token.
- *
- * POST /api/cli/login/start   — create a pending session
- * GET  /api/cli/login/poll     — check if session has been claimed
- * POST /api/cli/login/claim    — browser claims session (REQUIRES auth)
- */
+
 
 'use strict';
 
@@ -19,10 +10,10 @@ const requireAuth = require('../middleware/requireAuth');
 const router = express.Router();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-const SESSION_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const SESSION_TTL_MS = 5 * 60 * 1000; 
 
-// ── POST /api/cli/login/start ────────────────────────────────────────────────
-// Creates a pending CLI session. No auth required.
+
+
 router.post('/login/start', async (req, res) => {
   try {
     const sessionToken = crypto.randomBytes(32).toString('hex');
@@ -46,9 +37,9 @@ router.post('/login/start', async (req, res) => {
   }
 });
 
-// ── GET /api/cli/login/poll ──────────────────────────────────────────────────
-// CLI polls this endpoint waiting for the browser to claim the session.
-// No auth required.
+
+
+
 router.get('/login/poll', async (req, res) => {
   const { sessionId } = req.query;
 
@@ -63,7 +54,7 @@ router.get('/login/poll', async (req, res) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    // Check expiry
+    
     const age = Date.now() - new Date(session.created_at).getTime();
     if (age > SESSION_TTL_MS) {
       await db('cli_sessions').where({ id: sessionId }).update({ status: 'expired' });
@@ -81,9 +72,9 @@ router.get('/login/poll', async (req, res) => {
   }
 });
 
-// ── POST /api/cli/login/claim ────────────────────────────────────────────────
-// Called by the frontend once the user is authenticated.
-// REQUIRES auth — the browser sends its Supabase Bearer token.
+
+
+
 router.post('/login/claim', requireAuth, async (req, res) => {
   const { sessionId } = req.body;
 
@@ -102,14 +93,14 @@ router.post('/login/claim', requireAuth, async (req, res) => {
       return res.status(409).json({ error: `Session already ${session.status}` });
     }
 
-    // Check expiry
+    
     const age = Date.now() - new Date(session.created_at).getTime();
     if (age > SESSION_TTL_MS) {
       await db('cli_sessions').where({ id: sessionId }).update({ status: 'expired' });
       return res.status(410).json({ error: 'Session expired' });
     }
 
-    // Extract the token from the Authorization header to pass to the CLI
+    
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
 

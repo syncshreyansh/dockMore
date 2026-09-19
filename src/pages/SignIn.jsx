@@ -50,7 +50,7 @@ export default function SignIn() {
   return (
     <div className="min-h-screen bg-[#E8E7E5] flex items-center justify-center p-4 font-sans select-none">
       <div className="w-full max-w-[420px] bg-[#FAFAF9] rounded-[20px] p-7 sm:p-8 border border-[#D9D8D6]/70 flex flex-col gap-6">
-        {/* Wordmark Header */}
+        
         <div className="flex flex-col items-center text-center gap-2 pt-1">
           <Logo to="/signin" />
           <p className="text-xs text-[#8A8785] font-medium mt-1">
@@ -58,14 +58,14 @@ export default function SignIn() {
           </p>
         </div>
 
-        {/* Error notice */}
+        
         {error && (
           <div className="bg-red-50/80 border border-red-200 rounded-[12px] p-3 text-xs text-red-600 leading-tight">
             {error}
           </div>
         )}
 
-        {/* Sign In Form */}
+        
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5 text-left">
             <label className="text-xs font-semibold text-[#1A1A1A]" htmlFor="signin-email">
@@ -101,7 +101,7 @@ export default function SignIn() {
             />
           </div>
 
-          {/* Solid Primary Button */}
+          
           <button
             type="submit"
             disabled={loading || googleLoading}
@@ -111,7 +111,7 @@ export default function SignIn() {
           </button>
         </form>
 
-        {/* Divider */}
+        
         <div className="relative flex items-center justify-center my-0.5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-[#D9D8D6]" />
@@ -121,7 +121,7 @@ export default function SignIn() {
           </span>
         </div>
 
-        {/* Ghost Google Button with 1px border */}
+        
         <button
           type="button"
           disabled={loading || googleLoading}
@@ -155,7 +155,7 @@ export default function SignIn() {
           )}
         </button>
 
-        {/* Footer link to sign up */}
+        
         <p className="text-center text-xs text-[#8A8785]">
           Don't have an account?{' '}
           <Link

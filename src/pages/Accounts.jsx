@@ -28,7 +28,7 @@ export default function Accounts() {
     name: '',
   });
 
-  // Handle post-OAuth redirect query params
+  
   useEffect(() => {
     const connectedId = searchParams.get('connected');
     const errorParam = searchParams.get('error');
@@ -81,7 +81,7 @@ export default function Accounts() {
     setConnectingProviderId(prov.id);
     try {
       await connectAccount(prov.id);
-      // For Google Drive, window.location.href redirects to backend OAuth
+      
     } catch (err) {
       setConnectingProviderId(null);
       showToast(err.message || 'Failed to initiate connection', 'error');
@@ -90,7 +90,7 @@ export default function Accounts() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Action Row */}
+      
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted font-medium">
           {accounts.length} connected storage accounts
@@ -106,7 +106,7 @@ export default function Accounts() {
         </PillButton>
       </div>
 
-      {/* Grid of Account Cards */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {loading ? (
           <div className="col-span-full py-12 text-center text-sm text-muted">
@@ -126,7 +126,7 @@ export default function Accounts() {
                 className="bg-surface rounded-2xl p-6 flex flex-col justify-between hover:bg-white transition-colors duration-150 relative shadow-sm"
               >
                 <div>
-                  {/* Top Header */}
+                  
                   <div className="flex items-start justify-between gap-3">
                     <ProviderIcon
                       provider={account.provider}
@@ -134,7 +134,7 @@ export default function Accounts() {
                       withBackground
                     />
 
-                    {/* Status Badge */}
+                    
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-figma bg-track/40 text-xs font-semibold">
                       <span
                         className={`w-2 h-2 rounded-full ${
@@ -147,7 +147,7 @@ export default function Accounts() {
                     </div>
                   </div>
 
-                  {/* Account Name & Email */}
+                  
                   <div className="mt-4">
                     <h3 className="text-base font-bold text-ink truncate leading-tight">
                       {account.name}
@@ -157,7 +157,7 @@ export default function Accounts() {
                     </p>
                   </div>
 
-                  {/* Storage Progress */}
+                  
                   <div className="mt-5">
                     <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
                       <span className="text-ink">
@@ -179,7 +179,7 @@ export default function Accounts() {
                   </div>
                 </div>
 
-                {/* Bottom Actions */}
+                
                 <div className="mt-6 pt-4 border-t border-track/50 flex items-center justify-between gap-2">
                   <SyncButton
                     onSync={() => handleSync(account.id, account.name)}
@@ -199,7 +199,7 @@ export default function Accounts() {
           })
         )}
 
-        {/* Dashed "+ Connect New Account" Card */}
+        
         <button
           type="button"
           onClick={() => setShowConnectModal(true)}
@@ -217,7 +217,7 @@ export default function Accounts() {
         </button>
       </div>
 
-      {/* Connect Account Modal */}
+      
       <ConnectAccountModal
         isOpen={showConnectModal}
         onClose={() => setShowConnectModal(false)}
@@ -225,7 +225,7 @@ export default function Accounts() {
         onProviderSelect={handleProviderSelect}
       />
 
-      {/* Disconnect Confirmation Modal */}
+      
       <ConfirmModal
         isOpen={disconnectModalState.isOpen}
         title="Disconnect Account"

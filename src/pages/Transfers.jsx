@@ -27,13 +27,13 @@ const PROVIDER_OPTIONS = [
 ];
 
 export default function Transfers() {
-  const [filterTab, setFilterTab] = useState('all'); // 'all', 'in_progress', 'completed'
+  const [filterTab, setFilterTab] = useState('all'); 
   const [showModal, setShowModal] = useState(false);
   const { transfers, loading, addTransfer, cancelTransfer } = useTransfers(filterTab);
   const { accounts } = useAccounts();
   const { showToast } = useToast();
 
-  // New Transfer Form State
+  
   const [formData, setFormData] = useState({
     filename: '',
     size: '120 MB',
@@ -78,9 +78,9 @@ export default function Transfers() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Controls Bar */}
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Tab Filters */}
+        
         <div className="flex items-center gap-1.5 p-1 bg-track/40 rounded-figma select-none">
           {[
             { id: 'all', label: 'All Transfers' },
@@ -120,7 +120,7 @@ export default function Transfers() {
         </PillButton>
       </div>
 
-      {/* Transfers List */}
+      
       <div className="flex flex-col gap-3">
         {loading ? (
           <div className="bg-surface rounded-2xl py-12 text-center text-sm text-muted">
@@ -156,17 +156,17 @@ export default function Transfers() {
                 key={item.id}
                 className="bg-surface rounded-2xl p-5 flex flex-col gap-3 hover:bg-white transition-colors duration-150 relative group"
               >
-                {/* Top Row: Providers, Direction, Filename, Size, Status */}
+                
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Cloud Source -> Destination Badge */}
+                    
                     <div className="flex items-center gap-2 bg-track/40 px-3 py-1.5 rounded-figma shrink-0">
                       <ProviderIcon provider={item.sourceProvider} size="xs" />
                       <ArrowRight className="w-3.5 h-3.5 text-muted" />
                       <ProviderIcon provider={item.destinationProvider} size="xs" />
                     </div>
 
-                    {/* File details */}
+                    
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-ink truncate leading-tight">
                         {item.filename}
@@ -177,7 +177,7 @@ export default function Transfers() {
                     </div>
                   </div>
 
-                  {/* Status & Size */}
+                  
                   <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
                     <span className="text-xs font-semibold text-ink">{item.size}</span>
 
@@ -204,7 +204,7 @@ export default function Transfers() {
                   </div>
                 </div>
 
-                {/* Progress bar (if not completed) */}
+                
                 {!isCompleted && (
                   <div className="flex flex-col gap-1.5 mt-1">
                     <div className="flex items-center justify-between text-xs text-muted">
@@ -232,7 +232,7 @@ export default function Transfers() {
         )}
       </div>
 
-      {/* New Transfer Modal */}
+      
       <SlideUpModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}

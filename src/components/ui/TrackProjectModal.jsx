@@ -42,7 +42,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
       interval: Number(interval) || 15,
     });
 
-    // Reset form
+    
     setProjectName('');
     setFolderPath('');
     setInterval(15);
@@ -55,7 +55,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
       onClose={onClose}
       panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-2xl"
     >
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-ink">Track New Project</h3>
@@ -73,9 +73,9 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
         </button>
       </div>
 
-      {/* Form */}
+      
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        {/* Project Name */}
+        
         <div>
           <label className="block text-xs font-semibold text-ink mb-1.5">
             Project Name
@@ -89,7 +89,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
           />
         </div>
 
-        {/* Local Folder Path */}
+        
         <div>
           <label className="block text-xs font-semibold text-ink mb-1.5">
             Local Folder Path
@@ -110,7 +110,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
           </span>
         </div>
 
-        {/* Cloud Mirror Backup Account */}
+        
         <div>
           <label className="block text-xs font-semibold text-ink mb-1.5">
             Mirror Backup Account
@@ -128,7 +128,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
           )}
         </div>
 
-        {/* Snapshot Interval */}
+        
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
@@ -172,7 +172,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
           </div>
         </div>
 
-        {/* Security & Shadow Git Info notice */}
+        
         <div className="flex items-center gap-2 text-[11px] text-muted bg-track/30 p-3 rounded-xl mt-1">
           <ShieldCheck className="w-4 h-4 text-ink shrink-0" />
           <span>
@@ -180,7 +180,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
           </span>
         </div>
 
-        {/* Actions */}
+        
         <div className="flex items-center justify-end gap-3 mt-3 pt-3 border-t border-track/40">
           <PillButton variant="ghost" size="md" onClick={onClose}>
             Cancel

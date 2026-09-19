@@ -17,9 +17,7 @@ import {
 } from 'lucide-react';
 import ProviderIcon from './ProviderIcon';
 
-/**
- * File icon mapper based on extension
- */
+
 export function getFileIcon(extension = '') {
   const ext = extension.toLowerCase().replace('.', '');
   switch (ext) {
@@ -114,9 +112,9 @@ export default function FileRow({
           : 'bg-white hover:bg-[#303030] shadow-sm'
       } ${className}`}
     >
-      {/* Left: Checkbox + Icon + Name + Location */}
+      
       <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
-        {/* Checkbox */}
+        
         <div
           onClick={(e) => {
             e.stopPropagation();
@@ -153,9 +151,9 @@ export default function FileRow({
         </div>
       </div>
 
-      {/* Center/Right: Provider & Size & Modified */}
+      
       <div className="flex items-center gap-6 shrink-0">
-        {/* Provider badge */}
+        
         <div className="hidden sm:flex items-center gap-1.5 w-28">
           <ProviderIcon provider={provider} size="xs" />
           <span className="text-xs text-ink/80 group-hover:text-white/90 font-medium capitalize truncate transition-colors duration-150">
@@ -163,17 +161,17 @@ export default function FileRow({
           </span>
         </div>
 
-        {/* File Size */}
+        
         <div className="w-20 text-right">
           <span className="text-xs font-medium text-ink group-hover:text-white transition-colors duration-150">{size}</span>
         </div>
 
-        {/* Modified Date */}
+        
         <div className="hidden md:block w-32 text-right">
           <span className="text-xs text-muted group-hover:text-white/70 transition-colors duration-150">{modified}</span>
         </div>
 
-        {/* Actions */}
+        
         <div className="flex items-center gap-1 relative" ref={menuRef}>
           <button
             type="button"
@@ -211,7 +209,7 @@ export default function FileRow({
             <MoreVertical className="w-4 h-4" />
           </button>
 
-          {/* More Dropdown */}
+          
           {menuOpen && (
             <div
               className="absolute right-0 top-full mt-1 bg-white border border-track/60 shadow-[0_4px_24px_rgba(0,0,0,0.14)] rounded-2xl p-1.5 min-w-[150px] z-50 flex flex-col gap-1 text-ink"

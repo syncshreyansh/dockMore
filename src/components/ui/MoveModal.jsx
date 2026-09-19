@@ -52,7 +52,7 @@ export default function MoveModal({
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
-          {/* Root Option */}
+          
           <button
             type="button"
             onClick={() => setSelectedFolderId('root')}
@@ -78,7 +78,7 @@ export default function MoveModal({
             )}
           </button>
 
-          {/* Available Folders */}
+          
           {folders.map((folder) => {
             const isSelected = selectedFolderId === folder.id;
             return (

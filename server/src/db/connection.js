@@ -1,10 +1,4 @@
-/**
- * Shared Knex database connection instance.
- *
- * Import this module wherever you need to run queries:
- *   const db = require('./db/connection');
- *   const rows = await db('users').select('*');
- */
+
 
 const knex = require('knex');
 const knexfile = require('./knexfile');

@@ -27,10 +27,7 @@ const providerMap = {
   },
 };
 
-/**
- * ProviderIcon
- * Renders the real provider brand SVGs from src/assets/icons/
- */
+
 export default function ProviderIcon({
   provider = 'google-drive',
   size = 'md',

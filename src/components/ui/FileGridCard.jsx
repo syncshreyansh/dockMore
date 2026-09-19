@@ -33,7 +33,7 @@ export default function FileGridCard({
     };
   }, [menuOpen]);
 
-  // Generate thumbnail for images/videos/audio
+  
   const cleanExt = (extension || '').toLowerCase().replace('.', '');
   const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(cleanExt);
   const isVideo = ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(cleanExt);
@@ -57,7 +57,7 @@ export default function FileGridCard({
         isSelected ? 'ring-2 ring-ink' : 'border border-track/40 hover:border-ink/20'
       } ${className}`}
     >
-      {/* Checkbox */}
+      
       <div
         onClick={(e) => {
           e.stopPropagation();
@@ -72,7 +72,7 @@ export default function FileGridCard({
         <Check className="w-3.5 h-3.5 stroke-[2.5]" />
       </div>
 
-      {/* Thumbnail Area */}
+      
       <div className="aspect-square bg-surface w-full relative flex items-center justify-center overflow-hidden rounded-t-2xl border-b border-track/40">
         {isAudio ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-surface via-white to-track/20 gap-2">
@@ -101,7 +101,7 @@ export default function FileGridCard({
         )}
       </div>
 
-      {/* Info Area */}
+      
       <div className="p-3 flex items-center justify-between gap-2 bg-white relative rounded-b-2xl">
         <div className="flex items-center gap-2 min-w-0">
           <FileTypeIcon className="w-4 h-4 text-ink shrink-0" />
@@ -118,7 +118,7 @@ export default function FileGridCard({
           </div>
         </div>
 
-        {/* Action Menu */}
+        
         <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"

@@ -1,9 +1,4 @@
-/**
- * Google OAuth routes
- *
- * GET /api/auth/google/connect   — redirect to Google consent screen (requires auth)
- * GET /api/auth/google/callback  — receive code, exchange, store, redirect
- */
+
 
 'use strict';
 
@@ -16,9 +11,9 @@ const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
 
-// ── GET /api/auth/google/connect ─────────────────────────────────────────────
+
 router.get('/connect', requireAuth, (req, res) => {
-  // Encode authenticated user's id along with random CSRF nonce into state
+  
   const stateData = {
     userId: req.user.id,
     nonce: crypto.randomBytes(16).toString('hex'),
@@ -29,7 +24,7 @@ router.get('/connect', requireAuth, (req, res) => {
   return res.redirect(authUrl);
 });
 
-// ── GET /api/auth/google/callback ────────────────────────────────────────────
+
 router.get('/callback', async (req, res) => {
   const { code, error, state } = req.query;
 
@@ -45,11 +40,11 @@ router.get('/callback', async (req, res) => {
   }
 
   try {
-    // 1. Exchange code for tokens + user info
+    
     const { accessToken, refreshToken, expiresAt, email, name } =
       await googleDrive.exchangeCode(code);
 
-    // 2. Decode user ID from state if present
+    
     let targetUserId = null;
     if (state) {
       try {
@@ -67,7 +62,7 @@ router.get('/callback', async (req, res) => {
       user = await db('users').where({ id: targetUserId }).first();
     }
 
-    // Fallback: match or create by email if state wasn't available
+    
     if (!user) {
       user = await db('users').where({ email }).first();
       if (!user) {
@@ -78,7 +73,7 @@ router.get('/callback', async (req, res) => {
       }
     }
 
-    // 3. Check if this Google account is already connected for this user
+    
     const existing = await db('cloud_accounts')
       .where({ user_id: user.id, provider: 'google_drive', account_email: email })
       .first();
@@ -96,7 +91,7 @@ router.get('/callback', async (req, res) => {
 
     let accountId;
     if (existing) {
-      // Update tokens on re-auth
+      
       await db('cloud_accounts').where({ id: existing.id }).update(accountData);
       accountId = existing.id;
       console.log(`[google/callback] Re-authenticated account ${accountId} (${email}) for user ${user.id}`);
@@ -108,7 +103,7 @@ router.get('/callback', async (req, res) => {
       console.log(`[google/callback] New account created: ${accountId} (${email}) for user ${user.id}`);
     }
 
-    // 4. Redirect back to frontend
+    
     const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/accounts?connected=${accountId}`;
     return res.redirect(redirectUrl);
   } catch (err) {

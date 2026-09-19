@@ -9,7 +9,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Initial session retrieval
+    
     supabase.auth.getSession().then(({ data: { session: initialSession }, error }) => {
       if (error) {
         console.error('[AuthContext] Error getting initial session:', error.message);
@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
-    // 2. Real-time auth state listener
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);

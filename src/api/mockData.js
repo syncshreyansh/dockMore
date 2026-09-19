@@ -1,8 +1,4 @@
-/**
- * mockData.js
- * Centralized mock data layer for dockMore multi-cloud storage aggregator.
- * All hardcoded accounts, files, folders, and transfers live here.
- */
+
 
 import defaultAvatar from '../assets/icons/avatar.svg';
 
@@ -84,7 +80,7 @@ export const mockFolders = [
     provider: "google-drive",
     providerName: "Google Drive",
     accountEmail: "mailshreyanshhere@gmail.com",
-    accent: true, // First card uses the accent stacked black tab variant
+    accent: true, 
   },
   {
     id: "fold-2",

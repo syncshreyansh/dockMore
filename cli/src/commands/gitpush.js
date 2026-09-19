@@ -12,7 +12,7 @@ export async function gitpush(options) {
   const project = requireProject(projectDir);
   if (!project) return;
 
-  // Use the REAL git repo (not the shadow one)
+  
   const git = simpleGit(projectDir);
 
   const isRepo = await git.checkIsRepo();
@@ -32,7 +32,7 @@ export async function gitpush(options) {
   const spinner = ora('Getting diff...').start();
 
   try {
-    // Get diff (staged + unstaged)
+    
     let diffText = await git.diff() || '';
     const statusSummary = await git.status();
 
@@ -41,7 +41,7 @@ export async function gitpush(options) {
       return;
     }
 
-    // Build a comprehensive diff for the AI
+    
     if (!diffText && statusSummary.files.length > 0) {
       await git.add('-A');
       diffText = await git.diff(['--cached']);
@@ -62,7 +62,7 @@ export async function gitpush(options) {
     spinner.stop();
     console.log();
 
-    // Show warnings if any
+    
     if (result.warnings && result.warnings.length > 0) {
       console.log(chalk.yellow.bold('  ⚠ Code Guardian Warnings:'));
       result.warnings.forEach((w) => {
@@ -86,7 +86,7 @@ export async function gitpush(options) {
       }
     }
 
-    // Show AI commit message
+    
     console.log(chalk.bold('  📝 AI-Suggested Commit Message:'));
     console.log(chalk.cyan(`  "${result.commitMessage}"`));
     console.log();

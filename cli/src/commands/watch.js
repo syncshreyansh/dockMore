@@ -17,20 +17,20 @@ export async function watch(options) {
   const project = requireProject(projectDir);
   if (!project) return;
 
-  // Check if already watching
+  
   if (project.watchPid) {
     try {
-      process.kill(project.watchPid, 0); // test if alive
+      process.kill(project.watchPid, 0); 
       console.log(chalk.yellow(`  Watch daemon is already running (PID: ${project.watchPid}).`));
       console.log(chalk.dim('  Run `dockmore pause` to stop it first.'));
       return;
     } catch {
-      // Process no longer exists, clear stale PID
+      
       setProject(projectDir, { watchPid: null });
     }
   }
 
-  // Clamp interval to 10-30 minutes
+  
   let interval = parseInt(options.interval || project.interval || 15, 10);
   if (isNaN(interval)) interval = 15;
   interval = Math.max(10, Math.min(30, interval));
@@ -38,7 +38,7 @@ export async function watch(options) {
   const spinner = ora('Starting watch daemon...').start();
 
   try {
-    // Spawn detached daemon
+    
     const daemonPath = path.resolve(__dirname, '..', 'daemon.js');
 
     const child = spawn('node', [daemonPath], {
@@ -57,10 +57,10 @@ export async function watch(options) {
 
     child.unref();
 
-    // Save PID and interval
+    
     setProject(projectDir, { watchPid: child.pid, interval });
 
-    // Update backend status
+    
     await api.patch(`/api/code-projects/${project.projectId}`, {
       watch_status: 'watching',
       snapshot_interval_minutes: interval,

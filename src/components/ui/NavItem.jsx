@@ -2,11 +2,7 @@
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-/**
- * NavItem
- * Active: solid #303030 pill with white text/icon (animated via framer-motion layoutId).
- * Inactive: transparent background with #1A1A1A text/icon and subtle hover.
- */
+
 export default function NavItem({
   to,
   icon: Icon,

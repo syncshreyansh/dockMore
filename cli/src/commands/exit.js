@@ -10,7 +10,7 @@ export async function exit() {
       process.kill(project.watchPid, 'SIGTERM');
       console.log(chalk.green('✓ Watch daemon stopped.'));
     } catch {
-      // Already dead
+      
     }
     setProject(projectDir, { watchPid: null });
   } else {

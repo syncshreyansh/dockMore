@@ -14,7 +14,7 @@ export default function CustomSelect({
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  // Close dropdown when clicking outside
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -27,7 +27,7 @@ export default function CustomSelect({
 
   return (
     <div className={`relative w-full ${className}`} ref={dropdownRef}>
-      {/* Trigger Button */}
+      
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -43,7 +43,7 @@ export default function CustomSelect({
         />
       </button>
 
-      {/* Animated Dropdown Menu */}
+      
       <AnimatePresence>
         {isOpen && (
           <motion.div

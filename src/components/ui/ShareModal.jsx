@@ -24,7 +24,7 @@ export default function ShareModal({ isOpen, file, onClose }) {
         await navigator.clipboard.writeText(shareUrl);
       }
     } catch (err) {
-      // Fallback
+      
     }
     setCopied(true);
     showToast('Shareable link copied to clipboard!', 'success');

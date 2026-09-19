@@ -13,11 +13,7 @@ import ConfirmModal from './ConfirmModal';
 import ChangeBackupAccountModal from './ChangeBackupAccountModal';
 import { useToast } from '../../context/ToastContext';
 
-/**
- * CodeProjectCard
- * Card component for the Code section featuring GSAP sliding pill toggle
- * and multi-stage Push to GitHub fill animation.
- */
+
 export default function CodeProjectCard({
   project,
   onViewSnapshots,
@@ -34,10 +30,10 @@ export default function CodeProjectCard({
 
   const menuRef = useRef(null);
 
-  // Toggle sliding pill refs & custom slot tooltip
+  
   const pillRef = useRef(null);
   const toggleRef = useRef(null);
-  const [hoveredSlot, setHoveredSlot] = useState(null); // 'watching' | 'paused'
+  const [hoveredSlot, setHoveredSlot] = useState(null); 
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipTimeoutRef = useRef(null);
 
@@ -66,7 +62,7 @@ export default function CodeProjectCard({
     return () => clearTimeout(tooltipTimeoutRef.current);
   }, []);
 
-  // Push button refs
+  
   const btnRef = useRef(null);
   const btnContentRef = useRef(null);
   const btnTextRef = useRef(null);
@@ -77,7 +73,7 @@ export default function CodeProjectCard({
 
   const isWatching = project.watchStatus === 'watching';
 
-  // Close dropdown when clicking outside or pressing Escape
+  
   useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(e) {
@@ -98,7 +94,7 @@ export default function CodeProjectCard({
 
   const isFirstMount = useRef(true);
 
-  // Sync and animate sliding pill position whenever isWatching changes
+  
   useEffect(() => {
     if (!pillRef.current) return;
     const targetX = isWatching ? 0 : 49;
@@ -117,12 +113,12 @@ export default function CodeProjectCard({
     });
   }, [isWatching]);
 
-  // Sliding pill toggle click handler
+  
   const handleToggleClick = () => {
     onToggleWatch?.(project);
   };
 
-  // Multi-stage Push to GitHub animation
+  
   const handlePushClick = () => {
     if (isPushingLocal) return;
     setIsPushingLocal(true);
@@ -140,11 +136,11 @@ export default function CodeProjectCard({
       return;
     }
 
-    // Freeze button width to prevent layout collapse
+    
     const currentWidth = btn.offsetWidth;
     btn.style.width = `${currentWidth}px`;
 
-    // Calculate center offset for GitHub icon
+    
     const btnRect = btn.getBoundingClientRect();
     const iconRect = githubIcon.getBoundingClientRect();
     const centerOffsetX = (btnRect.left + btnRect.width / 2) - (iconRect.left + iconRect.width / 2);
@@ -157,7 +153,7 @@ export default function CodeProjectCard({
       },
     });
 
-    // --- STAGE 1: Text Dissolve (0ms -> 300ms) ---
+    
     tl.to(btnText, {
       opacity: 0,
       y: 4,
@@ -165,22 +161,22 @@ export default function CodeProjectCard({
       ease: 'power2.inOut',
     }, 0);
 
-    // Smoothly slide GitHub icon toward the center as text dissolves
+    
     tl.to(githubIcon, {
       x: centerOffsetX,
       duration: 0.3,
       ease: 'power2.inOut',
     }, 0);
 
-    // --- STAGE 2: GitHub Logo Centers & Fill Animation (300ms -> 2500ms) ---
-    // Logo grows slightly: scale(1) -> scale(1.15) over 200ms
+    
+    
     tl.to(githubIcon, {
       scale: 1.15,
       duration: 0.2,
       ease: 'power1.out',
     }, 0.3);
 
-    // Fill animation from bottom to top (2000ms duration, 0.5s -> 2.5s)
+    
     tl.fromTo(
       githubFill,
       { clipPath: 'inset(100% 0 0 0)' },
@@ -192,8 +188,8 @@ export default function CodeProjectCard({
       0.5
     );
 
-    // --- STAGE 3: Success Tick (2500ms -> 3500ms) ---
-    // Logo scales down and fades out over 200ms (2.5s -> 2.7s)
+    
+    
     tl.to(githubIcon, {
       scale: 0.8,
       opacity: 0,
@@ -201,7 +197,7 @@ export default function CodeProjectCard({
       ease: 'power2.in',
     }, 2.5);
 
-    // Tick appears: scales from 0.5 to 1 with spring bounce, draws stroke
+    
     tl.set(tickContainer, { visibility: 'visible' }, 2.6);
     tl.fromTo(
       tickContainer,
@@ -225,10 +221,10 @@ export default function CodeProjectCard({
       2.6
     );
 
-    // Tick holds for ~600ms (until 3.5s)
+    
 
-    // --- STAGE 4: Return to Normal (3500ms -> 4000ms) ---
-    // Tick fades and scales down
+    
+    
     tl.to(tickContainer, {
       opacity: 0,
       scale: 0.8,
@@ -237,7 +233,7 @@ export default function CodeProjectCard({
     }, 3.5);
     tl.set(tickContainer, { visibility: 'hidden' }, 3.7);
 
-    // Reset GitHub logo position, scale, opacity, and clipPath
+    
     tl.to(githubIcon, {
       x: 0,
       scale: 1,
@@ -247,7 +243,7 @@ export default function CodeProjectCard({
     }, 3.7);
     tl.set(githubFill, { clipPath: 'inset(100% 0 0 0)' }, 3.7);
 
-    // Text fades back in
+    
     tl.to(btnText, {
       opacity: 1,
       y: 0,
@@ -319,7 +315,7 @@ export default function CodeProjectCard({
           e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)';
         }}
       >
-        {/* Row 1: Project name + sync interval badge + Push to GitHub button */}
+        
         <div
           style={{
             display: 'flex',
@@ -366,7 +362,7 @@ export default function CodeProjectCard({
             </span>
           </div>
 
-          {/* Push to GitHub button (Enlarged size & DM Sans Regular font) */}
+          
           <button
             ref={btnRef}
             type="button"
@@ -402,7 +398,7 @@ export default function CodeProjectCard({
               e.currentTarget.style.background = '#303030';
             }}
           >
-            {/* Content row: GitHub icon + text */}
+            
             <div
               ref={btnContentRef}
               style={{
@@ -412,7 +408,7 @@ export default function CodeProjectCard({
                 justifyContent: 'center',
               }}
             >
-              {/* GitHub icon container: 22px x 22px */}
+              
               <div
                 ref={githubIconRef}
                 style={{
@@ -426,7 +422,7 @@ export default function CodeProjectCard({
                   transformOrigin: 'center center',
                 }}
               >
-                {/* Base SVG layer (22px x 22px) */}
+                
                 <svg
                   viewBox="0 0 24 24"
                   style={{
@@ -441,7 +437,7 @@ export default function CodeProjectCard({
                   <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                 </svg>
 
-                {/* Filled SVG overlay layer (22px x 22px) */}
+                
                 <svg
                   ref={githubFillRef}
                   viewBox="0 0 24 24"
@@ -458,7 +454,7 @@ export default function CodeProjectCard({
                 </svg>
               </div>
 
-              {/* Text label: DM Sans Regular (fontWeight 400) */}
+              
               <span
                 ref={btnTextRef}
                 style={{
@@ -471,7 +467,7 @@ export default function CodeProjectCard({
               </span>
             </div>
 
-            {/* Success Tick SVG: centered, hidden initially */}
+            
             <div
               ref={tickContainerRef}
               style={{
@@ -509,7 +505,7 @@ export default function CodeProjectCard({
           </button>
         </div>
 
-        {/* Middle row: Left column (Eye toggle + Last snapshot) & Right column (Snapshot panel) */}
+        
         <div
           style={{
             display: 'flex',
@@ -518,9 +514,9 @@ export default function CodeProjectCard({
             marginBottom: '18px',
           }}
         >
-          {/* Left column */}
+          
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Eye toggle — exactly as it was in the old Row 2 */}
+            
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <button
                 ref={toggleRef}
@@ -545,7 +541,7 @@ export default function CodeProjectCard({
                   boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 }}
               >
-                {/* Single animated sliding pill background */}
+                
                 <span
                   ref={pillRef}
                   style={{
@@ -562,7 +558,7 @@ export default function CodeProjectCard({
                   }}
                 />
 
-                {/* Eye open slot */}
+                
                 <span
                   style={{
                     position: 'relative',
@@ -588,7 +584,7 @@ export default function CodeProjectCard({
                   />
                 </span>
 
-                {/* Eye off slot */}
+                
                 <span
                   style={{
                     position: 'relative',
@@ -613,7 +609,7 @@ export default function CodeProjectCard({
                   />
                 </span>
 
-                {/* Custom themed tooltip (1s hover delay, positioned directly under hovered slot) */}
+                
                 {showTooltip && hoveredSlot && (
                   <div
                     style={{
@@ -643,13 +639,13 @@ export default function CodeProjectCard({
               </button>
             </div>
 
-            {/* Last snapshot text */}
+            
             <p style={{ fontSize: '13px', fontWeight: 500, color: '#8A8785', margin: 0 }}>
               Last snapshot: {project.lastSnapshot}
             </p>
           </div>
 
-          {/* Right column — Snapshot panel */}
+          
           <div
             style={{
               background: '#D9D8D6',
@@ -665,12 +661,12 @@ export default function CodeProjectCard({
               justifyContent: 'space-between',
             }}
           >
-            {/* Snapshot count label */}
+            
             <p style={{ fontSize: '13px', fontWeight: 700, color: '#303030', margin: 0 }}>
               {project.snapshotCount} snapshots
             </p>
 
-            {/* Inner white commit box */}
+            
             <div
               style={{
                 background: '#FAFAF9',
@@ -679,7 +675,7 @@ export default function CodeProjectCard({
                 border: '1px solid #E9E9E9',
               }}
             >
-              {/* Top row: "Last real commit: X" on left, GitCommit icon on RIGHT */}
+              
               <div
                 style={{
                   display: 'flex',
@@ -703,7 +699,7 @@ export default function CodeProjectCard({
                 />
               </div>
 
-              {/* Commit message */}
+              
               <p
                 style={{
                   fontSize: '12px',
@@ -720,7 +716,7 @@ export default function CodeProjectCard({
           </div>
         </div>
 
-        {/* Row 5: Footer – docked in + provider + email + three-dot menu */}
+        
         <div
           style={{
             display: 'flex',
@@ -755,7 +751,7 @@ export default function CodeProjectCard({
             </span>
           </div>
 
-          {/* Three-dot overflow menu */}
+          
           <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
             <button
               type="button"
@@ -786,7 +782,7 @@ export default function CodeProjectCard({
               <MoreVertical style={{ width: '20px', height: '20px' }} />
             </button>
 
-            {/* Dropdown menu */}
+            
             {menuOpen && (
               <div
                 role="menu"
@@ -806,7 +802,7 @@ export default function CodeProjectCard({
                   animation: 'codeMenuFadeIn 0.12s ease-out',
                 }}
               >
-                {/* 1. View snapshots */}
+                
                 <button
                   type="button"
                   role="menuitem"
@@ -842,7 +838,7 @@ export default function CodeProjectCard({
                   View snapshots
                 </button>
 
-                {/* 2. Download as zip */}
+                
                 <button
                   type="button"
                   role="menuitem"
@@ -875,7 +871,7 @@ export default function CodeProjectCard({
                   Download as zip
                 </button>
 
-                {/* 3. Change backup account */}
+                
                 <button
                   type="button"
                   role="menuitem"
@@ -913,7 +909,7 @@ export default function CodeProjectCard({
 
                 <div style={{ height: '1px', background: '#E9E9E9', margin: '3px 6px' }} />
 
-                {/* 4. Remove project */}
+                
                 <button
                   type="button"
                   role="menuitem"
@@ -966,7 +962,7 @@ export default function CodeProjectCard({
         </div>
       </div>
 
-      {/* Change backup account modal */}
+      
       <ChangeBackupAccountModal
         isOpen={changeAccountOpen}
         onClose={() => setChangeAccountOpen(false)}
@@ -974,7 +970,7 @@ export default function CodeProjectCard({
         onUpdateAccount={onChangeBackupAccount}
       />
 
-      {/* Confirm removal modal */}
+      
       <ConfirmModal
         isOpen={confirmOpen}
         title={`Remove "${project.name}"?`}

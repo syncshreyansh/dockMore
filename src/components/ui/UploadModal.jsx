@@ -120,7 +120,7 @@ export default function UploadModal({
       panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-2xl max-h-[90vh] overflow-y-auto"
       closeOnBackdrop={!isUploading}
     >
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-ink">Upload Files</h3>
@@ -140,7 +140,7 @@ export default function UploadModal({
       </div>
 
       <form onSubmit={handleStartUpload} className="flex flex-col gap-4">
-        {/* Destination Accounts & Folders */}
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-ink mb-1.5">
@@ -171,7 +171,7 @@ export default function UploadModal({
           </div>
         </div>
 
-        {/* Drag and Drop Zone */}
+        
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -205,7 +205,7 @@ export default function UploadModal({
           </div>
         </div>
 
-        {/* Selected Files Preview List */}
+        
         {selectedFiles.length > 0 && (
           <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
             <span className="text-xs font-bold text-ink">
@@ -230,7 +230,7 @@ export default function UploadModal({
           </div>
         )}
 
-        {/* Progress bar while uploading */}
+        
         {isUploading && (
           <div className="flex flex-col gap-1.5 pt-2">
             <div className="flex justify-between items-center text-xs font-semibold">
@@ -241,7 +241,7 @@ export default function UploadModal({
           </div>
         )}
 
-        {/* Footer Actions */}
+        
         <div className="flex items-center justify-end gap-2.5 pt-3">
           <PillButton
             variant="ghost"

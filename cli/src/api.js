@@ -1,9 +1,7 @@
 import fetch from 'node-fetch';
 import { API_BASE, getToken } from './config.js';
 
-/**
- * Core request helper. Automatically attaches auth token if available.
- */
+
 export async function request(endpoint, options = {}) {
   const token = getToken();
   const headers = {

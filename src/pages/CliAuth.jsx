@@ -12,14 +12,14 @@ export default function CliAuth() {
 
   const sessionId = searchParams.get('session');
 
-  const [status, setStatus] = useState('loading'); // loading | claiming | success | error
+  const [status, setStatus] = useState('loading'); 
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Wait for auth to finish loading
+    
     if (authLoading) return;
 
-    // If not logged in, redirect to signin preserving the session param
+    
     if (!user) {
       navigate(`/signin`, {
         replace: true,
@@ -28,14 +28,14 @@ export default function CliAuth() {
       return;
     }
 
-    // If no session param, show error
+    
     if (!sessionId) {
       setStatus('error');
       setError('Missing session parameter. Please use the link from your CLI.');
       return;
     }
 
-    // Claim the session
+    
     claimSession();
   }, [user, authLoading, sessionId]);
 
@@ -53,7 +53,7 @@ export default function CliAuth() {
   return (
     <div className="min-h-screen bg-[#E8E7E5] flex items-center justify-center p-4 font-sans select-none">
       <div className="w-full max-w-[420px] bg-[#FAFAF9] rounded-[20px] p-7 sm:p-8 border border-[#D9D8D6]/70 flex flex-col gap-6">
-        {/* Header */}
+        
         <div className="flex flex-col items-center text-center gap-2 pt-1">
           <Logo to="/" />
           <div className="flex items-center gap-2 mt-1">
@@ -64,7 +64,7 @@ export default function CliAuth() {
           </div>
         </div>
 
-        {/* Content */}
+        
         <div className="flex flex-col items-center text-center gap-4 py-4">
           {(status === 'loading' || status === 'claiming') && (
             <>
@@ -127,7 +127,7 @@ export default function CliAuth() {
           )}
         </div>
 
-        {/* Footer */}
+        
         <p className="text-center text-[11px] text-[#8A8785]">
           This authorization links your dockMore account to the CLI.
         </p>

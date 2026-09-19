@@ -42,7 +42,7 @@ export async function getFiles(filters = {}) {
       return [];
     }
 
-    // Fetch files from all connected accounts in parallel
+    
     const accountFilesPromises = accounts.map(async (acc) => {
       try {
         const res = await apiClient.get(`/api/accounts/${acc.id}/files`);

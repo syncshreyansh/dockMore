@@ -15,7 +15,7 @@ export async function initialize() {
   const projectDir = process.cwd();
   const projectName = path.basename(projectDir);
 
-  // Check if already initialized
+  
   const existing = getProject(projectDir);
   if (existing && existing.projectId) {
     console.log(chalk.yellow(`  This project is already tracked as "${projectName}".`));
@@ -26,12 +26,12 @@ export async function initialize() {
   const spinner = ora('Initializing dockMore tracking...').start();
 
   try {
-    // 1. Create a shadow git repo
+    
     const shadowId = crypto.randomBytes(8).toString('hex');
     const shadowDir = path.join(os.homedir(), '.dockmore', 'shadow-repos', shadowId);
     fs.mkdirSync(shadowDir, { recursive: true });
 
-    // Use GIT_DIR and GIT_WORK_TREE to make shadow repo invisible to project
+    
     const git = simpleGit({
       baseDir: projectDir,
     }).env({
@@ -43,19 +43,19 @@ export async function initialize() {
     await git.addConfig('user.name', 'dockMore Watcher', false);
     await git.addConfig('user.email', 'watcher@dockmore.dev', false);
 
-    // Initial commit of current state
+    
     await git.add('-A');
     await git.commit('dockmore: initial snapshot', { '--allow-empty': null });
 
     spinner.text = 'Registering project on backend...';
 
-    // 2. Register on backend
+    
     const project = await api.post('/api/code-projects', {
       name: projectName,
       local_path: projectDir,
     });
 
-    // 3. Save to local config
+    
     setProject(projectDir, {
       projectId: project.id,
       shadowRepoPath: shadowDir,

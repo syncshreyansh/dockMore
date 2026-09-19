@@ -10,7 +10,7 @@ export function TransfersProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Interval-based simulation for active transfers advancing progress
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setTransfers((prev) => {
@@ -21,7 +21,7 @@ export function TransfersProvider({ children }) {
           if (item.status !== 'in_progress') return item;
 
           const currentProgress = item.progress || 0;
-          const increment = Math.floor(Math.random() * 14) + 8; // 8-22% increase
+          const increment = Math.floor(Math.random() * 14) + 8; 
           const newProgress = Math.min(100, currentProgress + increment);
 
           if (newProgress >= 100) {
@@ -35,7 +35,7 @@ export function TransfersProvider({ children }) {
             };
           }
 
-          // Compute realistic remaining time based on remaining percentage
+          
           const remainingPct = 100 - newProgress;
           const secondsLeft = Math.max(1, Math.round((remainingPct / 20) * 2));
           const etaString = `${secondsLeft}s remaining`;

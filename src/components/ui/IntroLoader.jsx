@@ -15,7 +15,7 @@ const LETTERS = [
   { char: '.' },
 ];
 
-// Snappier, polished pacing — perceptible zoom without dragging
+
 const INITIAL_DELAY = 0.1;
 const LETTER_DURATION = 0.52;
 const LETTER_STAGGER = 0.075;
@@ -23,9 +23,7 @@ const HOLD_AFTER_REVEAL = 0.25;
 const EXIT_DURATION = 0.45;
 const CONTENT_CROSSFADE_LEAD = 0.12;
 
-/**
- * IntroLoader — GSAP letter reveal + snappy zoom-in & overlay exit.
- */
+
 export default function IntroLoader({ onExitStart, onComplete }) {
   const containerRef = useRef(null);
   const wordRef = useRef(null);
@@ -73,7 +71,7 @@ export default function IntroLoader({ onExitStart, onComplete }) {
         const revealEnd = (letters.length - 1) * LETTER_STAGGER + LETTER_DURATION;
         const exitStart = revealEnd + HOLD_AFTER_REVEAL;
 
-        // 1. Noticeable, elegant camera push-in / zoom during letter reveal and hold
+        
         tl.fromTo(
           wordRef.current,
           {
@@ -89,7 +87,7 @@ export default function IntroLoader({ onExitStart, onComplete }) {
           0
         );
 
-        // 2. Letter reveal — soft blur rise, left-to-right snappy stagger
+        
         tl.fromTo(
           letters,
           {
@@ -116,24 +114,24 @@ export default function IntroLoader({ onExitStart, onComplete }) {
           0
         );
 
-        // Content crossfade begins slightly before loader exit
+        
         tl.call(() => onExitStart?.(), null, exitStart - CONTENT_CROSSFADE_LEAD);
 
-        // 3. Dynamic zoom-in + fade out effect on exit (Optimized)
+        
         tl.to(
           wordRef.current,
           {
             opacity: 0,
-            scale: 1.15, // Slight zoom instead of massive 1.65
-            // Removed filter: blur() to fix GPU jank/skipping
+            scale: 1.15, 
+            
             duration: EXIT_DURATION,
-            ease: 'power2.out', // Smoother ease than power3.in
+            ease: 'power2.out', 
             force3D: true,
           },
           exitStart
         );
 
-        // Full overlay fade
+        
         tl.to(
           containerRef.current,
           {

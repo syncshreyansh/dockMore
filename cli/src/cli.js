@@ -19,7 +19,7 @@ program
   .description('CLI for dockMore — multi-cloud file management and code snapshotting')
   .version('1.0.0');
 
-// ── Bare command (login) ────────────────────────────────────────────────────
+
 program
   .option('-accounts', 'List connected cloud accounts')
   .option('-switch', 'Switch active backup account')
@@ -37,11 +37,11 @@ program
       program.outputHelp();
       return;
     }
-    // Bare invocation
+    
     await login();
   });
 
-// ── Subcommands ─────────────────────────────────────────────────────────────
+
 program
   .command('initialize')
   .description('Initialize dockMore tracking for the current project')
@@ -86,7 +86,7 @@ program
     await exitCmd();
   });
 
-// ── Custom help ─────────────────────────────────────────────────────────────
+
 program.configureHelp({
   formatHelp: () => {
     const lines = [
@@ -123,7 +123,7 @@ program.configureHelp({
   },
 });
 
-// ── Parse and route ─────────────────────────────────────────────────────────
+
 async function main() {
   await program.parseAsync(process.argv);
 }

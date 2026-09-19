@@ -93,12 +93,12 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
   }
   const currentFile = file || lastFileRef.current;
 
-  // Reset imageLoaded state when file changes
+  
   useEffect(() => {
     setImageLoaded(false);
   }, [currentFile?.id]);
 
-  // Handle escape key for lightbox
+  
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -122,7 +122,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
   const isAudio = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(cleanExt);
   const isPdf = cleanExt === 'pdf';
 
-  // Resolved preview URL: either explicit previewUrl, or fallback picsum for images
+  
   const mediaUrl =
     currentFile.previewUrl ||
     (isImage ? `https://picsum.photos/seed/${currentFile.id || currentFile.name}/1200/800` : null);
@@ -170,7 +170,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
         onClose={onClose}
         panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-2xl w-full flex flex-col gap-5 relative shadow-2xl max-h-[92vh] overflow-y-auto"
       >
-        {/* 1. Header row */}
+        
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-wider font-bold text-muted font-sans">
@@ -200,9 +200,9 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
           </button>
         </div>
 
-        {/* 2. Media Preview Area */}
+        
         <div className="bg-white rounded-2xl border border-track/40 shadow-sm overflow-hidden flex flex-col items-center justify-center min-h-[260px] max-h-[420px] w-full relative group/preview">
-          {/* Image Viewer */}
+          
           {isImage && mediaUrl && (
             <div
               className="w-full h-full min-h-[260px] max-h-[400px] flex items-center justify-center relative cursor-zoom-in overflow-hidden bg-[#F5F4F2]"
@@ -223,7 +223,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
                 }`}
               />
 
-              {/* Hover Zoom Hint */}
+              
               <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-medium flex items-center gap-1.5 opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200 pointer-events-none shadow-md">
                 <Maximize2 className="w-3 h-3" />
                 Click to expand
@@ -231,7 +231,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
             </div>
           )}
 
-          {/* Video Player */}
+          
           {isVideo && mediaUrl && (
             <div className="w-full bg-[#1a1a1a] rounded-2xl overflow-hidden flex items-center justify-center">
               <video
@@ -246,21 +246,21 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
             </div>
           )}
 
-          {/* Audio Player */}
+          
           {isAudio && mediaUrl && (
             <div className="w-full p-8 flex flex-col items-center justify-center bg-gradient-to-b from-surface/70 via-white to-white rounded-2xl gap-5">
-              {/* Music Icon Bubble */}
+              
               <div className="w-20 h-20 rounded-3xl bg-track/40 flex items-center justify-center text-ink shadow-xs">
                 <Music className="w-10 h-10 stroke-[1.8]" />
               </div>
 
-              {/* Title & Track Details */}
+              
               <div className="text-center max-w-md">
                 <h4 className="text-base font-bold text-ink truncate px-4">{currentFile.name}</h4>
                 <p className="text-xs text-muted mt-1">{currentFile.size} • High Fidelity Audio</p>
               </div>
 
-              {/* Decorative Audio Waveform Bars */}
+              
               <div className="flex items-center justify-center gap-1.5 h-10 w-full max-w-xs py-1">
                 {[45, 75, 30, 90, 60, 100, 40, 85, 95, 35, 70, 50, 80, 65, 90, 40, 75, 55].map((height, i) => (
                   <div
@@ -275,7 +275,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
                 ))}
               </div>
 
-              {/* Native Audio Controls */}
+              
               <audio
                 src={mediaUrl}
                 controls
@@ -286,7 +286,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
             </div>
           )}
 
-          {/* PDF Viewer */}
+          
           {isPdf && mediaUrl && (
             <div className="w-full h-[380px] rounded-2xl overflow-hidden">
               <iframe
@@ -297,7 +297,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
             </div>
           )}
 
-          {/* Unsupported / Fallback preview */}
+          
           {(!mediaUrl || (!isImage && !isVideo && !isAudio && !isPdf)) && (
             <div className="w-full p-10 flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-20 h-20 rounded-3xl bg-track/40 flex items-center justify-center text-ink/70 shadow-xs mb-1">
@@ -324,9 +324,9 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
           )}
         </div>
 
-        {/* 3. File Info Row (Single compact row) */}
+        
         <div className="bg-white rounded-2xl px-4 py-3 border border-track/40 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-          {/* Left: Name & Extension Badge */}
+          
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="font-bold text-ink truncate max-w-[200px] sm:max-w-[280px]">
               {currentFile.name}
@@ -336,7 +336,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
             </span>
           </div>
 
-          {/* Right: Size + Cloud Provider */}
+          
           <div className="flex items-center gap-3 shrink-0 text-muted font-medium">
             <span>{currentFile.size}</span>
             <span>•</span>
@@ -347,7 +347,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
           </div>
         </div>
 
-        {/* 4. Quick Actions */}
+        
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
           <PillButton
             variant="solid"
@@ -390,7 +390,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
           </PillButton>
         </div>
 
-        {/* 5. Danger Action: Delete */}
+        
         <div className="pt-1 flex justify-end">
           <PillButton
             variant="danger"
@@ -403,13 +403,13 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
         </div>
       </SlideUpModal>
 
-      {/* Fullscreen Image Lightbox Overlay */}
+      
       {isLightboxOpen && isImage && mediaUrl && (
         <div
           className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-fadeIn select-none"
           onClick={() => setIsLightboxOpen(false)}
         >
-          {/* Top Bar with Filename and Close Button */}
+          
           <div
             className="absolute top-4 left-4 right-4 flex items-center justify-between z-10"
             onClick={(e) => e.stopPropagation()}
@@ -438,7 +438,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
             </div>
           </div>
 
-          {/* Full Resolution Centered Image */}
+          
           <img
             src={mediaUrl}
             alt={currentFile.name}
@@ -448,7 +448,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
         </div>
       )}
 
-      {/* Sub-modals */}
+      
       <ShareModal
         isOpen={showShare}
         file={currentFile}

@@ -59,11 +59,11 @@ export default function AllFiles() {
 
   const [selectedProvider, setSelectedProvider] = useState('all');
   const [searchQuery, setSearchQuery] = useState(searchParam || '');
-  const [sortBy, setSortBy] = useState('modified'); // 'name', 'size', 'modified'
-  const [viewMode, setViewMode] = useState('grid'); // 'list', 'grid'
+  const [sortBy, setSortBy] = useState('modified'); 
+  const [viewMode, setViewMode] = useState('grid'); 
   const [selectedIds, setSelectedIds] = useState([]);
 
-  // Modals state
+  
   const [activePreviewFile, setActivePreviewFile] = useState(null);
   const [activeShareFile, setActiveShareFile] = useState(null);
   const [activeRenameFile, setActiveRenameFile] = useState(null);
@@ -103,7 +103,7 @@ export default function AllFiles() {
       .sort((a, b) => {
         if (sortBy === 'name') return a.name.localeCompare(b.name);
         if (sortBy === 'size') return (b.sizeBytes || 0) - (a.sizeBytes || 0);
-        return 0; // default order
+        return 0; 
       });
   }, [files, folderParam, selectedProvider, searchQuery, sortBy]);
 
@@ -198,9 +198,9 @@ export default function AllFiles() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Breadcrumb & Action Row */}
+      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Breadcrumbs */}
+        
         <div className="flex items-center gap-1.5 text-xs text-muted font-medium flex-wrap">
           <button
             type="button"
@@ -252,7 +252,7 @@ export default function AllFiles() {
         </PillButton>
       </div>
 
-      {/* Filter Pill Row */}
+      
       <div className="flex items-center gap-2 overflow-x-auto pb-1 select-none">
         {PROVIDER_FILTERS.map((filter) => {
           const isActive = selectedProvider === filter.id;
@@ -283,7 +283,7 @@ export default function AllFiles() {
         })}
       </div>
 
-      {/* Bulk Action Bar (shows when >=1 file selected) */}
+      
       {selectedIds.length > 0 ? (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-ink text-white p-3 px-4 rounded-2xl shadow-md">
           <div className="flex items-center gap-3">
@@ -339,7 +339,7 @@ export default function AllFiles() {
           </div>
         </div>
       ) : (
-        /* Secondary Stats & Sort Bar */
+        
         <div className="flex items-center justify-between bg-[#e9e9e9] px-4 py-2.5 rounded-2xl">
           <span className="text-xs text-muted font-medium">
             {filteredFiles.length} {filteredFiles.length === 1 ? 'file' : 'files'}
@@ -385,9 +385,9 @@ export default function AllFiles() {
         </div>
       )}
 
-      {/* Files List Table */}
+      
       <div className="flex flex-col gap-2">
-        {/* Table Header (shown only in list mode) */}
+        
         {viewMode === 'list' && (
           <div className="flex items-center justify-between px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-muted select-none">
             <div className="flex items-center gap-3 flex-1">
@@ -416,7 +416,7 @@ export default function AllFiles() {
           </div>
         )}
 
-        {/* Rows / Cards */}
+        
         {loading ? (
           <div className="bg-surface rounded-2xl py-12 text-center text-sm text-muted">
             Loading cloud files...
@@ -485,8 +485,8 @@ export default function AllFiles() {
         )}
       </div>
 
-      {/* Global Modals */}
-      {/* File Action Modals */}
+      
+      
       <FilePreviewModal
         isOpen={Boolean(activePreviewFile)}
         file={activePreviewFile}

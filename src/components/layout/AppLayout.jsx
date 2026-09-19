@@ -14,7 +14,7 @@ import { shouldSkipIntro as checkReducedMotion } from '../ui/IntroLoader';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useFiles } from '../../hooks/useFiles';
 
-// Module-scoped flag: resets on browser reload, persists across client-side page transitions
+
 let hasAnimatedGreetingThisLoad = false;
 
 export default function AppLayout({ introComplete: propIntroComplete }) {
@@ -33,20 +33,20 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const searchRef = useRef(null);
 
-  // --- Greeting animation: fires on reload after intro loader, but not on switching pages ---
+  
   const [hasAnimatedGreeting, setHasAnimatedGreeting] = useState(
     () => hasAnimatedGreetingThisLoad || checkReducedMotion()
   );
 
-  // Clean up any legacy sessionStorage flag from prior versions
+  
   useEffect(() => {
     try {
       sessionStorage.removeItem('dockmore_greeting_animated');
     } catch {}
   }, []);
 
-  // If intro completes while on a non-home page, mark greeting as completed
-  // so switching to the home page later will not animate.
+  
+  
   useEffect(() => {
     if (introComplete && !isHome) {
       hasAnimatedGreetingThisLoad = true;
@@ -59,7 +59,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
     setHasAnimatedGreeting(true);
   };
 
-  // Ensure clean light mode
+  
   useEffect(() => {
     document.documentElement.removeAttribute('data-theme');
     try {
@@ -67,7 +67,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
     } catch {}
   }, []);
 
-  // Close search dropdown on click outside
+  
   useEffect(() => {
     function handleClickOutside(e) {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -107,12 +107,12 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
     }
   };
 
-  // Dynamic time-based greeting matching user's local time & timezone
+  
   const getGreeting = () => {
     const hours = new Date().getHours();
-    // 12:00 AM - 11:59 AM -> Good morning
-    // 12:00 PM - 4:59 PM -> Good afternoon
-    // 5:00 PM - 11:59 PM -> Good evening
+    
+    
+    
     if (hours < 12) {
       return 'Good morning';
     } else if (hours < 17) {
@@ -122,7 +122,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
     }
   };
 
-  // Determine dynamic title for each page
+  
   const getPageTitle = () => {
     switch (location.pathname) {
       case '/':
@@ -185,7 +185,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
 
   return (
     <div className="min-h-screen md:h-screen md:w-screen md:overflow-hidden bg-sidebar text-ink flex flex-col md:flex-row antialiased p-0">
-      {/* Mobile Top Navigation Bar */}
+      
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-sidebar border-b border-track/60 sticky top-0 z-40">
         <Logo />
         <button
@@ -198,12 +198,12 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
         </button>
       </div>
 
-      {/* Desktop Persistent Sidebar */}
+      
       <div className="hidden md:block h-screen shrink-0">
         <Sidebar />
       </div>
 
-      {/* Mobile Drawer */}
+      
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div
@@ -216,11 +216,11 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
         </div>
       )}
 
-      {/* Right Column: Persistent Header + Scrollable Main Content */}
+      
       <div className="flex-1 min-w-0 flex flex-col h-full md:h-screen bg-sidebar overflow-hidden">
-        {/* Top Header Row â€” Fixed height (92px) on desktop so Upload & Search NEVER shift */}
+        
         <header className="shrink-0 px-4 md:px-8 pt-4 pb-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4 z-30 select-none h-auto lg:h-[92px]">
-          {/* Left Title / Greeting with generous leading and padding for full descenders ('g', 'y', etc.) */}
+          
           <div className="min-w-0 flex-1 flex flex-col justify-center overflow-visible py-1">
             <h1 className="font-serif italic text-[32px] sm:text-[38px] md:text-[44px] leading-[1.2] text-ink font-bold tracking-[-0.038em] overflow-visible pb-0.5">
               {isHome ? (
@@ -256,7 +256,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
             )}
           </div>
 
-          {/* Right: Upload Button + Pure White Search Bar (Fixed at top-right for EVERY page) */}
+          
           <div className="flex items-center gap-3 w-full lg:w-[657px] shrink-0 h-[48px]">
             <PillButton
               variant="solid"
@@ -281,7 +281,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
                 inputClassName="h-[48px] bg-white text-ink text-[15px] border border-track/60 hover:border-track focus:border-ink/20 shadow-sm"
               />
 
-              {/* Live Search Results Dropdown */}
+              
               {searchDropdownOpen && searchQuery.trim().length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border border-track/60 p-3 z-50 max-h-80 overflow-y-auto flex flex-col gap-2.5 text-ink">
                   {searchResults.folders.length === 0 && searchResults.files.length === 0 ? (
@@ -290,7 +290,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
                     </div>
                   ) : (
                     <>
-                      {/* Folders */}
+                      
                       {searchResults.folders.length > 0 && (
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted px-2">
@@ -315,7 +315,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
                         </div>
                       )}
 
-                      {/* Files */}
+                      
                       {searchResults.files.length > 0 && (
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted px-2">
@@ -364,7 +364,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
           </div>
         </header>
 
-        {/* Scrollable Main Content Panel (Only this panel scrolls) */}
+        
         <main className="flex-1 min-w-0 w-full bg-white md:rounded-tl-[24px] md:rounded-tr-[24px] overflow-y-auto shadow-sm">
           {isHome ? (
             <div className="px-4 py-6 md:px-8 md:py-8">
@@ -378,7 +378,7 @@ export default function AppLayout({ introComplete: propIntroComplete }) {
         </main>
       </div>
 
-      {/* Global Modals */}
+      
       <UploadModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}

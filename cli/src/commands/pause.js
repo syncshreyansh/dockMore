@@ -18,7 +18,7 @@ export async function pause() {
   try {
     process.kill(project.watchPid, 'SIGTERM');
   } catch {
-    // Already dead — that's fine
+    
   }
 
   setProject(projectDir, { watchPid: null });

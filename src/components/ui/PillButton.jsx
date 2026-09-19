@@ -1,14 +1,7 @@
 ﻿import React from 'react';
 import { Link } from 'react-router-dom';
 
-/**
- * PillButton
- * Variants:
- * - "solid": Solid #303030 background with white text (primary actions)
- * - "ghost": Bordered or transparent background with text-ink (secondary actions)
- * - "light": Surface background with subtle border
- * Shape: rounded-rectangle (rounded-figma / 14px border-radius)
- */
+
 export default function PillButton({
   children,
   variant = 'solid',

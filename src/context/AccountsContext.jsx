@@ -81,7 +81,7 @@ export function AccountsProvider({ children }) {
       if (!token) {
         throw new Error('You must be signed in to connect a Google Drive account.');
       }
-      // Redirect to backend OAuth initiation route with the session token
+      
       window.location.href = `${API_BASE_URL}/api/auth/google/connect?token=${encodeURIComponent(token)}`;
       return null;
     }

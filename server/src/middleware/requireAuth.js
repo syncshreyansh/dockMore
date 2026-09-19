@@ -1,13 +1,4 @@
-/**
- * requireAuth — Express middleware for Supabase JWT verification
- *
- * Responsibilities:
- *   - Extracts Bearer token from `Authorization` header (or `token` query param)
- *   - Verifies JWT against Supabase Auth using the admin/service role client
- *   - Matches or creates a corresponding row in the local `users` table
- *   - Attaches `{ id, email, name, supabaseId }` to `req.user`
- *   - Returns 401 JSON error on missing or invalid tokens
- */
+
 
 'use strict';
 
@@ -62,7 +53,7 @@ async function requireAuth(req, res, next) {
       });
     }
 
-    // Look up matching row in local `users` table keyed on email
+    
     let localUser = await db('users').where({ email: sbUser.email }).first();
 
     if (!localUser) {

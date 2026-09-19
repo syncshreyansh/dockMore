@@ -21,7 +21,7 @@ export default function App() {
   const [introComplete, setIntroComplete] = useState(shouldSkipIntro);
   const contentRef = useRef(null);
 
-  // Disable native browser right-click globally
+  
   useEffect(() => {
     const handleContextMenu = (e) => e.preventDefault();
     document.addEventListener('contextmenu', handleContextMenu);
@@ -31,7 +31,7 @@ export default function App() {
   const handleExitStart = useCallback(() => {
     if (!contentRef.current) return;
 
-    // Content crossfade - overlaps loader exit
+    
     gsap.fromTo(
       contentRef.current,
       { opacity: 0, scale: 0.98 },
@@ -68,7 +68,7 @@ export default function App() {
             }}
           >
             <Routes>
-              {/* Public Auth Routes */}
+              
               <Route
                 path="/signin"
                 element={
@@ -86,10 +86,10 @@ export default function App() {
                 }
               />
 
-              {/* CLI Auth — handles its own auth redirect internally */}
+              
               <Route path="/cli-auth" element={<CliAuth />} />
 
-              {/* Protected Dashboard Routes */}
+              
               <Route
                 element={
                   <ProtectedRoute>

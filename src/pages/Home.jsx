@@ -30,7 +30,7 @@ function StorageTooltip({ active, payload }) {
 
   return (
     <div className="bg-white/95 backdrop-blur-md border border-track/60 shadow-[0_4px_24px_rgba(0,0,0,0.14)] rounded-2xl p-3 min-w-[210px] text-ink select-none pointer-events-none transition-all duration-150 z-50">
-      {/* Header: Icon/Dot + Provider Name + Amount badge */}
+      
       <div className="flex items-center justify-between gap-2 border-b border-track/40 pb-2 mb-2">
         <div className="flex items-center gap-2">
           {!isFreeSpace && data.provider ? (
@@ -53,7 +53,7 @@ function StorageTooltip({ active, payload }) {
         </span>
       </div>
 
-      {/* Account breakdown */}
+      
       {data.accounts && data.accounts.length > 0 ? (
         <div className="flex flex-col gap-1.5 mt-1">
           {data.accounts.map((acc, i) => (
@@ -82,7 +82,7 @@ export default function Home() {
   const { showToast } = useToast();
 
   const [filterType] = useState('All Folders');
-  const [fileViewMode, setFileViewMode] = useState('grid'); // 'list', 'grid'
+  const [fileViewMode, setFileViewMode] = useState('grid'); 
   const [activePreviewFile, setActivePreviewFile] = useState(null);
   const [activeShareFile, setActiveShareFile] = useState(null);
   const [activeRenameFile, setActiveRenameFile] = useState(null);
@@ -123,14 +123,14 @@ export default function Home() {
     }
   };
 
-  // Dynamic multi-cloud breakdown data from connected accounts
+  
   const chartData = stats?.storageByProvider && stats.storageByProvider.length > 0
     ? stats.storageByProvider
     : [];
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Empty State Banner if no accounts connected */}
+      
       {!accountsLoading && accounts.length === 0 && (
         <div className="bg-surface rounded-2xl p-6 border border-track/60 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -150,7 +150,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Asymmetric stats row */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 md:gap-7">
         <div className="md:col-span-2 lg:col-span-6 bg-sidebar rounded-figma p-6 flex flex-col justify-between min-h-[190px] shadow-[0_0_4px_rgba(0,0,0,0.25)]">
           <div>
@@ -256,9 +256,9 @@ export default function Home() {
         />
       </div>
 
-      {/* Recent Folders and Files section */}
+      
       <section className="bg-sidebar rounded-figma p-7 flex flex-col gap-6 min-h-[300px]">
-        {/* Recent Folders Header */}
+        
         <div className="flex flex-col gap-1">
           <h2 className="font-sans font-semibold text-[30px] leading-none text-ink tracking-[-0.048em]">Recent</h2>
           <div className="inline-flex">
@@ -272,7 +272,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Folders Grid */}
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {loading ? (
             <div className="col-span-full py-8 text-center text-sm text-muted">
@@ -289,9 +289,9 @@ export default function Home() {
           )}
         </div>
 
-        {/* Recent Files Subsection */}
+        
         <div className="flex flex-col gap-3 pt-6 border-t border-track/40">
-          {/* Subheader: All Files selector + View mode + View all action */}
+          
           <div className="flex items-center justify-between">
             <div className="inline-flex items-center gap-4">
               <button
@@ -335,7 +335,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Files List */}
+          
           <div className="flex flex-col gap-2">
             {loading ? (
               <div className="py-6 text-center text-xs text-muted">
@@ -370,7 +370,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Modals for file actions */}
+      
       <FilePreviewModal
         isOpen={Boolean(activePreviewFile)}
         file={activePreviewFile}

@@ -1,11 +1,7 @@
 ﻿import React from 'react';
 import { Search, X } from 'lucide-react';
 
-/**
- * SearchInput
- * Rendered as a clean rounded pill input (bg-white)
- * with search icon on left and clear button on right.
- */
+
 export default function SearchInput({
   value,
   onChange,

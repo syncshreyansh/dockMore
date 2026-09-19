@@ -58,7 +58,7 @@ export default function Code() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Action Row */}
+      
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted font-medium">
           {projects.length} tracked projects with shadow snapshotting
@@ -74,7 +74,7 @@ export default function Code() {
         </PillButton>
       </div>
 
-      {/* Grid of Figma-style Project Cards */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {loading ? (
           <div className="col-span-full py-12 text-center text-sm text-muted">
@@ -94,7 +94,7 @@ export default function Code() {
           ))
         )}
 
-        {/* Dashed "+ Track New Project" Card (compact) */}
+        
         <button
           type="button"
           onClick={() => setShowTrackModal(true)}
@@ -146,14 +146,14 @@ export default function Code() {
         </button>
       </div>
 
-      {/* Track New Project Modal */}
+      
       <TrackProjectModal
         isOpen={showTrackModal}
         onClose={() => setShowTrackModal(false)}
         onTrackProject={handleTrackProject}
       />
 
-      {/* Snapshot History Modal */}
+      
       <SnapshotHistoryModal
         isOpen={Boolean(activeProjectForSnapshots)}
         project={activeProjectForSnapshots}

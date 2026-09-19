@@ -10,14 +10,14 @@ export async function resume() {
   const project = requireProject(projectDir);
   if (!project) return;
 
-  // Check if already running
+  
   if (project.watchPid) {
     try {
       process.kill(project.watchPid, 0);
       console.log(chalk.yellow(`  Watch daemon is already running (PID: ${project.watchPid}).`));
       return;
     } catch {
-      // Dead PID, will restart
+      
     }
   }
 

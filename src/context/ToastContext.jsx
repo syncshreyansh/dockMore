@@ -4,15 +4,11 @@ import gsap from 'gsap';
 
 const ToastContext = createContext(null);
 
-/**
- * ToastItem
- * Individual toast item featuring GSAP slide-from-right entry
- * and slide-out-to-right exit with motion blur.
- */
+
 function ToastItem({ t, onDismiss, registerDismiss }) {
   const elRef = useRef(null);
 
-  // Exit animation: slides out to right with motion blur, then removes from React state
+  
   const handleDismiss = useCallback(() => {
     if (!elRef.current) {
       onDismiss(t.id);
@@ -28,13 +24,13 @@ function ToastItem({ t, onDismiss, registerDismiss }) {
     });
   }, [onDismiss, t.id]);
 
-  // Register dismiss handler with provider so auto-timeout can trigger GSAP exit
+  
   useEffect(() => {
     registerDismiss(t.id, handleDismiss);
     return () => registerDismiss(t.id, null);
   }, [registerDismiss, t.id, handleDismiss]);
 
-  // Entry animation on mount: slide from right with motion blur
+  
   useEffect(() => {
     if (!elRef.current) return;
     gsap.fromTo(
@@ -108,7 +104,7 @@ export function ToastProvider({ children }) {
       setTimeout(() => {
         const handler = dismissHandlers.current[id];
         if (handler) handler();
-        else dismissToast(id); // fallback
+        else dismissToast(id); 
       }, duration);
     }
 
@@ -118,7 +114,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ showToast, toast: showToast, dismissToast }}>
       {children}
-      {/* Toast Notification Container */}
+      
       <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0">
         {toasts.map((t) => (
           <ToastItem

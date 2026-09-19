@@ -23,7 +23,7 @@ export default function ConnectAccountModal({
       panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-2xl"
       closeOnBackdrop={!connectingProviderId}
     >
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-ink">Connect Cloud Account</h3>
@@ -42,7 +42,7 @@ export default function ConnectAccountModal({
         </button>
       </div>
 
-      {/* Provider List */}
+      
       <div className="flex flex-col gap-2.5">
         {PROVIDERS.map((prov) => {
           const isConnecting = connectingProviderId === prov.id;
@@ -79,7 +79,7 @@ export default function ConnectAccountModal({
         })}
       </div>
 
-      {/* Security notice */}
+      
       <div className="flex items-center gap-2 text-[11px] text-muted bg-track/30 p-3 rounded-xl">
         <ShieldCheck className="w-4 h-4 text-ink shrink-0" />
         <span>
