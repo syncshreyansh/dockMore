@@ -5,12 +5,10 @@ import {
   MoreVertical,
   GitCommit,
   Download,
-  Cloud,
 } from 'lucide-react';
 import gsap from 'gsap';
 import ProviderIcon from './ProviderIcon';
 import ConfirmModal from './ConfirmModal';
-import ChangeBackupAccountModal from './ChangeBackupAccountModal';
 import { useToast } from '../../context/ToastContext';
 
 
@@ -20,13 +18,12 @@ export default function CodeProjectCard({
   onRemoveProject,
   onPushToGitHub,
   onToggleWatch,
-  onChangeBackupAccount,
+  busy = false,
+  pushPhase = 'idle',
 }) {
   const { showToast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [changeAccountOpen, setChangeAccountOpen] = useState(false);
-  const [isPushingLocal, setIsPushingLocal] = useState(false);
 
   const menuRef = useRef(null);
 
@@ -72,6 +69,34 @@ export default function CodeProjectCard({
   const tickPathRef = useRef(null);
 
   const isWatching = project.watchStatus === 'watching';
+  const watchIsStale = project.watchStatus === 'stale';
+
+  useEffect(() => {
+    const elements = [githubFillRef.current, githubIconRef.current, btnContentRef.current, tickContainerRef.current, tickPathRef.current].filter(Boolean);
+    gsap.killTweensOf(elements);
+    if (pushPhase === 'reviewing') {
+      gsap.set(btnContentRef.current, { opacity: 1 });
+      gsap.set(tickContainerRef.current, { opacity: 0, visibility: 'hidden' });
+      gsap.set(tickPathRef.current, { strokeDashoffset: 30 });
+      gsap.to(githubFillRef.current, { clipPath: 'inset(0% 0 0 0)', duration: 0.42, ease: 'power2.out', overwrite: 'auto' });
+      gsap.fromTo(githubIconRef.current, { y: 0 }, { y: -3, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' });
+    } else if (pushPhase === 'ready' || pushPhase === 'pushing') {
+      gsap.to(githubFillRef.current, { clipPath: 'inset(0% 0 0 0)', duration: 0.18, overwrite: 'auto' });
+    } else if (pushPhase === 'success') {
+      const timeline = gsap.timeline();
+      timeline.to(btnContentRef.current, { opacity: 0, duration: 0.18 })
+        .set(tickContainerRef.current, { visibility: 'visible' })
+        .to(tickContainerRef.current, { opacity: 1, duration: 0.18 })
+        .to(tickPathRef.current, { strokeDashoffset: 0, duration: 0.38, ease: 'power2.out' });
+    } else if (pushPhase === 'idle') {
+      gsap.to(githubFillRef.current, { clipPath: 'inset(100% 0 0 0)', duration: 0.2, overwrite: 'auto' });
+      gsap.set(githubIconRef.current, { y: 0 });
+      gsap.set(btnContentRef.current, { opacity: 1 });
+      gsap.set(tickContainerRef.current, { opacity: 0, visibility: 'hidden' });
+      gsap.set(tickPathRef.current, { strokeDashoffset: 30 });
+    }
+    return () => gsap.killTweensOf(elements);
+  }, [pushPhase]);
 
   
   useEffect(() => {
@@ -114,167 +139,14 @@ export default function CodeProjectCard({
   }, [isWatching]);
 
   
-  const handleToggleClick = () => {
-    onToggleWatch?.(project);
-  };
+  const handleToggleClick = () => { if (!busy) onToggleWatch?.(project); };
 
   
-  const handlePushClick = () => {
-    if (isPushingLocal) return;
-    setIsPushingLocal(true);
-
-    const btn = btnRef.current;
-    const btnText = btnTextRef.current;
-    const githubIcon = githubIconRef.current;
-    const githubFill = githubFillRef.current;
-    const tickContainer = tickContainerRef.current;
-    const tickPath = tickPathRef.current;
-
-    if (!btn || !btnText || !githubIcon || !githubFill || !tickContainer || !tickPath) {
-      onPushToGitHub?.(project);
-      setIsPushingLocal(false);
-      return;
-    }
-
-    
-    const currentWidth = btn.offsetWidth;
-    btn.style.width = `${currentWidth}px`;
-
-    
-    const btnRect = btn.getBoundingClientRect();
-    const iconRect = githubIcon.getBoundingClientRect();
-    const centerOffsetX = (btnRect.left + btnRect.width / 2) - (iconRect.left + iconRect.width / 2);
-
-    const tl = gsap.timeline({
-      onComplete: () => {
-        btn.style.width = '';
-        setIsPushingLocal(false);
-        onPushToGitHub?.(project);
-      },
-    });
-
-    
-    tl.to(btnText, {
-      opacity: 0,
-      y: 4,
-      duration: 0.3,
-      ease: 'power2.inOut',
-    }, 0);
-
-    
-    tl.to(githubIcon, {
-      x: centerOffsetX,
-      duration: 0.3,
-      ease: 'power2.inOut',
-    }, 0);
-
-    
-    
-    tl.to(githubIcon, {
-      scale: 1.15,
-      duration: 0.2,
-      ease: 'power1.out',
-    }, 0.3);
-
-    
-    tl.fromTo(
-      githubFill,
-      { clipPath: 'inset(100% 0 0 0)' },
-      {
-        clipPath: 'inset(0% 0 0 0)',
-        duration: 2.0,
-        ease: 'power1.inOut',
-      },
-      0.5
-    );
-
-    
-    
-    tl.to(githubIcon, {
-      scale: 0.8,
-      opacity: 0,
-      duration: 0.2,
-      ease: 'power2.in',
-    }, 2.5);
-
-    
-    tl.set(tickContainer, { visibility: 'visible' }, 2.6);
-    tl.fromTo(
-      tickContainer,
-      { opacity: 0, scale: 0.5 },
-      {
-        opacity: 1,
-        scale: 1,
-        duration: 0.5,
-        ease: 'back.out(1.7)',
-      },
-      2.6
-    );
-    tl.fromTo(
-      tickPath,
-      { strokeDashoffset: 30 },
-      {
-        strokeDashoffset: 0,
-        duration: 0.45,
-        ease: 'power2.out',
-      },
-      2.6
-    );
-
-    
-
-    
-    
-    tl.to(tickContainer, {
-      opacity: 0,
-      scale: 0.8,
-      duration: 0.2,
-      ease: 'power2.in',
-    }, 3.5);
-    tl.set(tickContainer, { visibility: 'hidden' }, 3.7);
-
-    
-    tl.to(githubIcon, {
-      x: 0,
-      scale: 1,
-      opacity: 1,
-      duration: 0.3,
-      ease: 'power2.out',
-    }, 3.7);
-    tl.set(githubFill, { clipPath: 'inset(100% 0 0 0)' }, 3.7);
-
-    
-    tl.to(btnText, {
-      opacity: 1,
-      y: 0,
-      duration: 0.3,
-      ease: 'power2.out',
-    }, 3.7);
-  };
+  const handlePushClick = () => { if (!busy) onPushToGitHub?.(project); };
 
   const handleDownloadZip = () => {
     setMenuOpen(false);
-    try {
-      const filename = `${(project.name || 'project').toLowerCase().replace(/\s+/g, '-')}-backup.zip`;
-      const zipBytes = new Uint8Array([
-        0x50, 0x4B, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-      ]);
-      const blob = new Blob([zipBytes], { type: 'application/zip' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      showToast(`Downloaded "${filename}"`, 'success');
-    } catch (err) {
-      showToast('Failed to download ZIP archive', 'error');
-    }
+    showToast('Project snapshots are stored locally; use the DockMore CLI to manage the shadow repository.', 'info');
   };
 
   const handleRemoveConfirm = () => {
@@ -284,21 +156,11 @@ export default function CodeProjectCard({
 
   return (
     <>
-      <style>{`
-        @keyframes eyeScan {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(2.5px); }
-          75% { transform: translateX(-2.5px); }
-        }
-        .animate-pupil circle {
-          animation: eyeScan 4s ease-in-out infinite;
-        }
-      `}</style>
       <div
         className="code-card"
         style={{
           background: '#E9E9E9',
-          borderRadius: '20px',
+          borderRadius: '14px',
           padding: '28px 28px 22px 28px',
           display: 'flex',
           flexDirection: 'column',
@@ -309,7 +171,7 @@ export default function CodeProjectCard({
           transition: 'box-shadow 0.2s ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(48,48,48,0.05)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)';
@@ -336,7 +198,7 @@ export default function CodeProjectCard({
           >
             <h3
               style={{
-                fontSize: '28px',
+                fontSize: '24px',
                 fontWeight: 600,
                 color: '#303030',
                 margin: 0,
@@ -354,7 +216,7 @@ export default function CodeProjectCard({
               style={{
                 fontSize: '14px',
                 fontWeight: 500,
-                color: '#8A8785',
+                color: '#8C8C8C',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -367,8 +229,8 @@ export default function CodeProjectCard({
             ref={btnRef}
             type="button"
             onClick={handlePushClick}
-            disabled={isPushingLocal}
-            aria-label="Push to GitHub"
+            disabled={busy}
+            aria-label="Review and push project to Git remote"
             style={{
               position: 'relative',
               display: 'inline-flex',
@@ -377,12 +239,12 @@ export default function CodeProjectCard({
               background: '#303030',
               color: '#fff',
               border: 'none',
-              borderRadius: '16px',
+              borderRadius: '14px',
               padding: '12px 24px',
               fontSize: '15px',
               fontWeight: 400,
-              cursor: isPushingLocal ? 'not-allowed' : 'pointer',
-              pointerEvents: isPushingLocal ? 'none' : 'auto',
+              cursor: 'pointer',
+              pointerEvents: 'auto',
               whiteSpace: 'nowrap',
               fontFamily: '"DM Sans", sans-serif',
               flexShrink: 0,
@@ -392,7 +254,7 @@ export default function CodeProjectCard({
               letterSpacing: '-0.01em',
             }}
             onMouseEnter={(e) => {
-              if (!isPushingLocal) e.currentTarget.style.background = '#1a1a1a';
+              e.currentTarget.style.background = '#1a1a1a';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = '#303030';
@@ -463,7 +325,7 @@ export default function CodeProjectCard({
                   willChange: 'transform, opacity',
                 }}
               >
-                Push to GitHub
+                Review and Push
               </span>
             </div>
 
@@ -525,13 +387,16 @@ export default function CodeProjectCard({
                   handleToggleClick(e);
                   setShowTooltip(false);
                 }}
+                disabled={busy}
                 onMouseMove={handleButtonMouseMove}
                 onMouseLeave={handleToggleHoverLeave}
                 aria-label={isWatching ? 'Pause watcher' : 'Resume watcher'}
+                role="switch"
+                aria-checked={isWatching}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  background: '#FAFAF9',
+                  background: '#FFFFFF',
                   border: 'none',
                   borderRadius: '18px',
                   padding: '5px 6px',
@@ -577,7 +442,7 @@ export default function CodeProjectCard({
                     style={{
                       width: '22px',
                       height: '22px',
-                      color: isWatching ? '#ffffff' : '#8A8785',
+                      color: isWatching ? '#ffffff' : '#8C8C8C',
                       strokeWidth: 1.8,
                       transition: 'color 0.2s ease',
                     }}
@@ -602,7 +467,7 @@ export default function CodeProjectCard({
                     style={{
                       width: '22px',
                       height: '22px',
-                      color: isWatching ? '#8A8785' : '#ffffff',
+                      color: isWatching ? '#8C8C8C' : '#ffffff',
                       strokeWidth: 1.8,
                       transition: 'color 0.2s ease',
                     }}
@@ -619,7 +484,7 @@ export default function CodeProjectCard({
                       transform: 'translateX(-50%)',
                       marginTop: '6px',
                       background: '#303030',
-                      color: '#FAFAF9',
+                      color: '#E9E9E9',
                       padding: '4px 8px',
                       borderRadius: '5px',
                       fontSize: '11px',
@@ -640,15 +505,16 @@ export default function CodeProjectCard({
             </div>
 
             
-            <p style={{ fontSize: '13px', fontWeight: 500, color: '#8A8785', margin: 0 }}>
+            <p style={{ fontSize: '13px', fontWeight: 500, color: '#8C8C8C', margin: 0 }}>
               Last snapshot: {project.lastSnapshot}
             </p>
+            {watchIsStale && <p style={{ fontSize: '12px', color: '#b45309', margin: 0 }}>Watcher contact lost. Run dockmore repair locally.</p>}
           </div>
 
           
           <div
             style={{
-              background: '#D9D8D6',
+              background: '#D1D1D1',
               borderRadius: '10px',
               padding: '12px 13px',
               width: '290px',
@@ -662,15 +528,15 @@ export default function CodeProjectCard({
             }}
           >
             
-            <p style={{ fontSize: '13px', fontWeight: 700, color: '#303030', margin: 0 }}>
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#303030', margin: 0 }}>
               {project.snapshotCount} snapshots
             </p>
 
             
             <div
               style={{
-                background: '#FAFAF9',
-                borderRadius: '9px',
+                background: '#FFFFFF',
+                borderRadius: '14px',
                 padding: '10px 12px',
                 border: '1px solid #E9E9E9',
               }}
@@ -684,14 +550,14 @@ export default function CodeProjectCard({
                   marginBottom: '6px',
                 }}
               >
-                <span style={{ fontSize: '11px', fontWeight: 500, color: '#8A8785' }}>
+                <span style={{ fontSize: '11px', fontWeight: 500, color: '#8C8C8C' }}>
                   Last real commit: {project.lastCommitTime}
                 </span>
                 <GitCommit
                   style={{
                     width: '15px',
                     height: '15px',
-                    color: '#8A8785',
+                    color: '#8C8C8C',
                     strokeWidth: 1.8,
                     flexShrink: 0,
                     marginLeft: '8px',
@@ -730,13 +596,12 @@ export default function CodeProjectCard({
               style={{
                 fontSize: '14px',
                 fontWeight: 500,
-                color: '#8A8785',
+                color: '#8C8C8C',
                 whiteSpace: 'nowrap',
               }}
             >
-              docked in:
+              Stored locally in:
             </span>
-            <ProviderIcon provider={project.provider} size="xs" />
             <span
               style={{
                 fontSize: '14px',
@@ -747,7 +612,7 @@ export default function CodeProjectCard({
                 whiteSpace: 'nowrap',
               }}
             >
-              {project.accountEmail}
+              DockMore shadow Git
             </span>
           </div>
 
@@ -792,9 +657,9 @@ export default function CodeProjectCard({
                   bottom: '100%',
                   right: 0,
                   marginBottom: '6px',
-                  background: '#FAFAF9',
-                  border: '1px solid #D9D8D6',
-                  borderRadius: '12px',
+                  background: '#FFFFFF',
+                  border: '1px solid #D1D1D1',
+                  borderRadius: '14px',
                   boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
                   padding: '4px',
                   minWidth: '170px',
@@ -834,7 +699,7 @@ export default function CodeProjectCard({
                     e.currentTarget.style.background = 'transparent';
                   }}
                 >
-                  <Eye style={{ width: '15px', height: '15px', color: '#8A8785', strokeWidth: 2 }} />
+                  <Eye style={{ width: '15px', height: '15px', color: '#8C8C8C', strokeWidth: 2 }} />
                   View snapshots
                 </button>
 
@@ -867,47 +732,9 @@ export default function CodeProjectCard({
                     e.currentTarget.style.background = 'transparent';
                   }}
                 >
-                  <Download style={{ width: '15px', height: '15px', color: '#8A8785', strokeWidth: 2 }} />
-                  Download as zip
+                  <Download style={{ width: '15px', height: '15px', color: '#8C8C8C', strokeWidth: 2 }} />
+                  Local snapshots (CLI)
                 </button>
-
-                
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setChangeAccountOpen(true);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '100%',
-                    padding: '9px 14px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: '#303030',
-                    cursor: 'pointer',
-                    transition: 'background 0.12s ease',
-                    textAlign: 'left',
-                    fontFamily: '"DM Sans", sans-serif',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  <Cloud style={{ width: '15px', height: '15px', color: '#8A8785', strokeWidth: 2 }} />
-                  Change backup acc
-                </button>
-
-                <div style={{ height: '1px', background: '#E9E9E9', margin: '3px 6px' }} />
 
                 
                 <button
@@ -963,18 +790,10 @@ export default function CodeProjectCard({
       </div>
 
       
-      <ChangeBackupAccountModal
-        isOpen={changeAccountOpen}
-        onClose={() => setChangeAccountOpen(false)}
-        project={project}
-        onUpdateAccount={onChangeBackupAccount}
-      />
-
-      
       <ConfirmModal
         isOpen={confirmOpen}
         title={`Remove "${project.name}"?`}
-        message="This will stop shadow snapshotting and remove all local snapshot history. Cloud backups already synced will remain."
+        message="The watcher will stop before this project is removed. Local shadow history remains on the project computer."
         confirmLabel="Remove"
         cancelLabel="Cancel"
         variant="danger"

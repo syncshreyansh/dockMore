@@ -8,7 +8,7 @@ export function requireAuth() {
     console.log(chalk.red('  ✗ Not logged in.'));
     console.log(chalk.dim('  Run `dockmore` to log in first.'));
     console.log();
-    return false;
+    throw new Error('Not logged in');
   }
   return true;
 }
@@ -20,7 +20,7 @@ export function requireProject(projectDir) {
     console.log(chalk.red('  ✗ This project is not initialized.'));
     console.log(chalk.dim('  Run `dockmore initialize` in your project directory first.'));
     console.log();
-    return null;
+    throw new Error('Project is not initialized');
   }
   return project;
 }

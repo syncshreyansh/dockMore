@@ -17,17 +17,17 @@ export default function ConfirmModal({
     <SlideUpModal
       isOpen={isOpen}
       onClose={onCancel}
-      panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-2xl"
+      panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-menu"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {variant === 'danger' && (
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+            <div className="w-10 h-10 rounded-full bg-track/60 flex items-center justify-center text-red-600 shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
           )}
           <div>
-            <h3 className="text-lg font-bold text-ink leading-tight">{title}</h3>
+            <h3 className="text-lg font-semibold text-ink leading-tight">{title}</h3>
             <p className="text-xs text-muted mt-1 font-medium">{message}</p>
           </div>
         </div>

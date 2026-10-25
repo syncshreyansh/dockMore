@@ -4,6 +4,7 @@ import {
   Folder,
   ArrowLeftRight,
   Code,
+  Images,
   Settings,
   HelpCircle,
   Plus,
@@ -49,7 +50,7 @@ export default function Sidebar({ onCloseMobile }) {
     setMenuOpen(false);
     try {
       await authSignOut();
-      showToast('Signed out successfully', 'info');
+      showToast('Signed out', 'info');
       navigate('/signin');
     } catch (err) {
       showToast(err.message || 'Failed to sign out', 'error');
@@ -58,7 +59,7 @@ export default function Sidebar({ onCloseMobile }) {
 
   return (
     <>
-      <aside className="sidebar-scroll w-[260px] lg:w-[290px] h-full bg-sidebar flex flex-col justify-between py-6 px-5 lg:px-7 shrink-0 overflow-y-auto md:overflow-y-hidden md:hover:overflow-y-auto select-none [scrollbar-gutter:stable]">
+      <aside className="sidebar-scroll w-[240px] xl:w-[260px] h-full bg-sidebar flex flex-col justify-between py-5 px-4 xl:px-5 shrink-0 overflow-y-auto select-none">
         
         <div className="flex flex-col gap-5">
           
@@ -79,6 +80,12 @@ export default function Sidebar({ onCloseMobile }) {
               to="/files"
               icon={Folder}
               label="All Files"
+              onClick={onCloseMobile}
+            />
+            <NavItem
+              to="/media"
+              icon={Images}
+              label="Media"
               onClick={onCloseMobile}
             />
             <NavItem
@@ -103,7 +110,7 @@ export default function Sidebar({ onCloseMobile }) {
             <div className="flex items-center justify-between px-1 mb-3">
               <div className="flex items-center gap-2 text-muted">
                 <Cloud className="w-[15px] h-[15px] stroke-[2]" />
-                <span className="text-[11px] font-bold tracking-wider uppercase font-sans">
+                <span className="text-[11px] font-semibold tracking-wider uppercase font-sans">
                   CLOUD ACCOUNTS
                 </span>
               </div>
@@ -167,7 +174,7 @@ export default function Sidebar({ onCloseMobile }) {
                 setShowHelpModal(true);
                 onCloseMobile && onCloseMobile();
               }}
-              className="group flex items-center justify-start gap-3 px-4 py-3 rounded-xl font-semibold text-[15px] text-ink hover:bg-black/5 transition-colors duration-150 text-left select-none mx-1 w-[calc(100%-0.5rem)]"
+              className="group flex items-center justify-start gap-3 px-4 py-3 rounded-figma font-semibold text-[15px] text-ink hover:bg-black/5 transition-colors duration-150 text-left select-none mx-1 w-[calc(100%-0.5rem)]"
             >
               <HelpCircle className="w-[18px] h-[18px] stroke-[2] shrink-0 text-ink" />
               <span className="truncate">Help & Support</span>
@@ -186,7 +193,7 @@ export default function Sidebar({ onCloseMobile }) {
                     navigate('/settings');
                     onCloseMobile && onCloseMobile();
                   }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-ink hover:bg-black/5 transition-colors duration-150 text-left"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-figma text-xs font-semibold text-ink hover:bg-black/5 transition-colors duration-150 text-left"
                 >
                   <User className="w-3.5 h-3.5 text-muted" />
                   <span>Profile</span>
@@ -199,7 +206,7 @@ export default function Sidebar({ onCloseMobile }) {
                     navigate('/settings');
                     onCloseMobile && onCloseMobile();
                   }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-ink hover:bg-black/5 transition-colors duration-150 text-left"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-figma text-xs font-semibold text-ink hover:bg-black/5 transition-colors duration-150 text-left"
                 >
                   <Sliders className="w-3.5 h-3.5 text-muted" />
                   <span>Preferences</span>
@@ -210,7 +217,7 @@ export default function Sidebar({ onCloseMobile }) {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors duration-150 text-left"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-figma text-xs font-semibold text-red-600 hover:bg-sidebar transition-colors duration-150 text-left"
                 >
                   <LogOut className="w-3.5 h-3.5 text-red-500" />
                   <span>Sign Out</span>
@@ -230,7 +237,7 @@ export default function Sidebar({ onCloseMobile }) {
                   className="w-8 h-8 rounded-figma object-cover shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <h5 className="text-sm font-bold text-ink truncate leading-tight">
+                  <h5 className="text-sm font-semibold text-ink truncate leading-tight">
                     {authUser?.user_metadata?.full_name || authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || accountUser?.name || 'dockMore User'}
                   </h5>
                   <p className="text-[11px] text-muted leading-tight mt-0.5">

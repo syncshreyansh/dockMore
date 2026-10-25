@@ -22,7 +22,7 @@ export default function ProgressBar({
       )}
       <div className={`w-full bg-track rounded-full overflow-hidden ${height}`}>
         <div
-          className={`h-full ${fillClassName} rounded-full transition-all duration-150 ease-out`}
+          className={`h-full ${fillClassName} rounded-full transition-[width] duration-150 ease-out`}
           style={{ width: `${percentage}%` }}
         />
       </div>

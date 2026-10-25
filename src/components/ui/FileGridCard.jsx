@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MoreVertical, Check, FolderOpen, Edit3, Trash2, Download, Share2, Play, Music } from 'lucide-react';
 import ProviderIcon from './ProviderIcon';
 import { getFileIcon } from './FileRow';
+import FileThumbnail from './FileThumbnail';
 
 export default function FileGridCard({
   file,
@@ -14,10 +15,9 @@ export default function FileGridCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  if (!file) return null;
 
-  const { name, extension, provider, modified, size } = file;
-  const FileTypeIcon = getFileIcon(extension);
+  const { name, extension, provider, modified, size } = file || {};
+  const FileTypeIcon = file?.isFolder ? FolderOpen : getFileIcon(extension);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -34,16 +34,7 @@ export default function FileGridCard({
   }, [menuOpen]);
 
   
-  const cleanExt = (extension || '').toLowerCase().replace('.', '');
-  const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(cleanExt);
-  const isVideo = ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(cleanExt);
-  const isAudio = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(cleanExt);
-
-  const thumbnail = isImage
-    ? (file.previewUrl || `https://picsum.photos/seed/${file.id || name}/400/250`)
-    : isVideo
-    ? `https://picsum.photos/seed/${file.id || name}/400/250`
-    : null;
+  if (!file) return null;
 
   return (
     <div
@@ -53,8 +44,8 @@ export default function FileGridCard({
         e.stopPropagation();
         setMenuOpen(true);
       }}
-      className={`group relative bg-white rounded-2xl cursor-pointer select-none transition-all duration-150 ease-out flex flex-col overflow-visible shadow-sm hover:shadow-md ${
-        isSelected ? 'ring-2 ring-ink' : 'border border-track/40 hover:border-ink/20'
+      className={`group relative bg-white rounded-figma cursor-pointer select-none transition-colors duration-150 ease-out flex flex-col overflow-visible shadow-sm hover:shadow-panel ${
+        isSelected ? 'ring-2 ring-ink' : ''
       } ${className}`}
     >
       
@@ -73,40 +64,13 @@ export default function FileGridCard({
       </div>
 
       
-      <div className="aspect-square bg-surface w-full relative flex items-center justify-center overflow-hidden rounded-t-2xl border-b border-track/40">
-        {isAudio ? (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-surface via-white to-track/20 gap-2">
-            <div className="w-12 h-12 rounded-2xl bg-black/5 flex items-center justify-center text-ink/70 group-hover:scale-110 transition-transform">
-              <Music className="w-6 h-6 stroke-[1.8]" />
-            </div>
-          </div>
-        ) : thumbnail ? (
-          <>
-            <img
-              src={thumbnail}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-            />
-            {isVideo && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-10 h-10 rounded-full bg-black/55 backdrop-blur-xs flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-                  <Play className="w-4 h-4 fill-white ml-0.5" />
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <FileTypeIcon className="w-12 h-12 text-muted/50 group-hover:scale-110 transition-transform duration-300" />
-        )}
-      </div>
+      <FileThumbnail file={file} />
 
-      
-      <div className="p-3 flex items-center justify-between gap-2 bg-white relative rounded-b-2xl">
+      <div className="p-3 flex items-center justify-between gap-2 bg-white relative rounded-b-figma">
         <div className="flex items-center gap-2 min-w-0">
           <FileTypeIcon className="w-4 h-4 text-ink shrink-0" />
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-ink truncate max-w-[120px] sm:max-w-[150px] leading-tight">
+            <span className="text-xs font-semibold text-ink truncate max-w-[120px] sm:max-w-[150px] leading-tight">
               {name}
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -133,7 +97,7 @@ export default function FileGridCard({
 
           {menuOpen && (
             <div
-              className="absolute right-0 bottom-full mb-1 bg-white border border-track/60 shadow-[0_4px_24px_rgba(0,0,0,0.14)] rounded-2xl p-1.5 min-w-[150px] z-50 flex flex-col gap-1 text-ink"
+              className="absolute right-0 bottom-full mb-1 bg-white border border-track/60 shadow-menu rounded-figma p-1.5 min-w-[150px] z-50 flex flex-col gap-1 text-ink"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -142,7 +106,7 @@ export default function FileGridCard({
                   setMenuOpen(false);
                   onAction && onAction('preview', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 text-left"
               >
                 <FolderOpen className="w-3.5 h-3.5 text-muted" />
                 <span>Preview</span>
@@ -153,7 +117,7 @@ export default function FileGridCard({
                   setMenuOpen(false);
                   onAction && onAction('download', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 text-left"
               >
                 <Download className="w-3.5 h-3.5 text-muted" />
                 <span>Download</span>
@@ -164,7 +128,7 @@ export default function FileGridCard({
                   setMenuOpen(false);
                   onAction && onAction('share', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 text-left"
               >
                 <Share2 className="w-3.5 h-3.5 text-muted" />
                 <span>Share</span>
@@ -175,7 +139,7 @@ export default function FileGridCard({
                   setMenuOpen(false);
                   onAction && onAction('rename', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 text-left"
               >
                 <Edit3 className="w-3.5 h-3.5 text-muted" />
                 <span>Rename</span>
@@ -187,7 +151,7 @@ export default function FileGridCard({
                   setMenuOpen(false);
                   onAction && onAction('delete', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold text-red-600 hover:bg-sidebar text-left"
               >
                 <Trash2 className="w-3.5 h-3.5 text-red-500" />
                 <span>Delete</span>

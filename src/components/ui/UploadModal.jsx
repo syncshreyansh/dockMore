@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Upload, File, CheckCircle2, Cloud, Folder } from 'lucide-react';
 import SlideUpModal from './SlideUpModal';
 import CustomSelect from './CustomSelect';
@@ -16,20 +16,27 @@ export default function UploadModal({
 }) {
   const { addFile, folders } = useFiles();
   const { accounts } = useAccounts();
+  const driveAccounts = accounts.filter((account) => ['google_drive', 'google-drive'].includes(account.provider));
   const { showToast } = useToast();
 
   const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState(
-    accounts[0]?.id || '1'
+    defaultFolderId?.split('::')[0] || accounts[0]?.id || ''
   );
   const [selectedFolderId, setSelectedFolderId] = useState(defaultFolderId || 'root');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  useEffect(() => {
+    if (isOpen && defaultFolderId) {
+      setSelectedFolderId(defaultFolderId);
+      setSelectedAccountId(defaultFolderId.split('::')[0]);
+    }
+  }, [isOpen, defaultFolderId]);
 
   const currentAccount =
-    accounts.find((a) => a.id === selectedAccountId) || accounts[0];
+    driveAccounts.find((a) => a.id === selectedAccountId) || driveAccounts[0];
 
   const formatFileSize = (bytes) => {
     if (!bytes) return '1.2 MB';
@@ -68,64 +75,57 @@ export default function UploadModal({
   const handleStartUpload = async (e) => {
     e.preventDefault();
     if (selectedFiles.length === 0) return;
+    if (!currentAccount) {
+      showToast('Connect a Google Drive account before uploading.', 'error');
+      return;
+    }
 
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(0);
+    const folderAccountId = selectedFolderId === 'root' ? null : selectedFolderId.split('::')[0];
+    if (folderAccountId && folderAccountId !== currentAccount.id) {
+      setIsUploading(false);
+      showToast('Choose the account that owns this destination folder.', 'error');
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 20;
-      });
-    }, 200);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      setUploadProgress(100);
-
-      selectedFiles.forEach((f) => {
-        const ext = '.' + (f.name.split('.').pop() || 'dat');
-        addFile({
-          name: f.name,
-          extension: ext,
-          size: formatFileSize(f.size),
-          provider: currentAccount?.provider || 'google-drive',
-          accountEmail: currentAccount?.email || 'mailshreyanshhere@gmail.com',
-          modified: 'Just now',
-          path: selectedFolderId === 'root' ? '/' : `/Folder ${selectedFolderId}/`,
-          starred: false,
+    try {
+      for (const file of selectedFiles) {
+        await addFile({
+          file,
+          accountId: currentAccount.id,
+          parentId: selectedFolderId === 'root' ? undefined : folders.find((folder) => folder.id === selectedFolderId)?.targetId || selectedFolderId.split('::').slice(1).join('::'),
+          folderId: selectedFolderId === 'root' ? null : selectedFolderId,
+          provider: currentAccount.provider,
+          accountEmail: currentAccount.email,
         });
-      });
-
+        setUploadProgress(Math.round(((selectedFiles.indexOf(file) + 1) / selectedFiles.length) * 100));
+      }
       setIsUploading(false);
       onClose();
-      showToast(
-        `Uploaded ${selectedFiles.length} ${
-          selectedFiles.length === 1 ? 'file' : 'files'
-        } to ${currentAccount?.providerName || 'Cloud'}`,
-        'success'
-      );
+      showToast(`Uploaded ${selectedFiles.length} ${selectedFiles.length === 1 ? 'file' : 'files'} to ${currentAccount.providerName}`, 'success');
       setSelectedFiles([]);
       setUploadProgress(0);
-    }, 1200);
+    } catch (err) {
+      setIsUploading(false);
+      setUploadProgress(0);
+      showToast(err.message || 'Upload failed', 'error');
+    }
   };
 
   return (
     <SlideUpModal
       isOpen={isOpen}
       onClose={onClose}
-      panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-2xl max-h-[90vh] overflow-y-auto"
+      panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-menu max-h-[90vh] overflow-y-auto"
       closeOnBackdrop={!isUploading}
     >
       
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-ink">Upload Files</h3>
+          <h3 className="text-lg font-semibold text-ink">Upload Files</h3>
           <p className="text-xs text-muted mt-0.5">
-            Upload local files directly to your connected cloud storages.
+            Choose files and a Google Drive account.
           </p>
         </div>
         <button
@@ -149,7 +149,7 @@ export default function UploadModal({
             <CustomSelect
               value={selectedAccountId}
               onChange={(val) => setSelectedAccountId(val)}
-              options={accounts.map((acc) => ({
+            options={driveAccounts.map((acc) => ({
                 value: acc.id,
                 label: `${acc.providerName} (${acc.name})`,
               }))}
@@ -164,7 +164,7 @@ export default function UploadModal({
               value={selectedFolderId}
               onChange={(val) => setSelectedFolderId(val)}
               options={[
-                { value: 'root', label: 'Root Directory (/)' },
+                { value: 'root', label: 'My Drive' },
                 ...folders.map((f) => ({ value: f.id, label: f.name })),
               ]}
             />
@@ -177,7 +177,7 @@ export default function UploadModal({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3 cursor-pointer transition-colors duration-150 ${
+          className={`border-2 border-dashed rounded-figma p-8 flex flex-col items-center justify-center text-center gap-3 cursor-pointer transition-colors duration-150 ${
             isDragging
               ? 'border-ink bg-ink/5'
               : 'border-track hover:border-ink/40 bg-white/70 hover:bg-white'
@@ -191,16 +191,16 @@ export default function UploadModal({
             className="hidden"
           />
 
-          <div className="w-12 h-12 rounded-2xl bg-track/40 flex items-center justify-center text-ink">
+          <div className="w-12 h-12 rounded-figma bg-track/40 flex items-center justify-center text-ink">
             <Upload className="w-6 h-6 stroke-[1.75]" />
           </div>
 
           <div>
-            <p className="text-sm font-bold text-ink">
+            <p className="text-sm font-semibold text-ink">
               Choose files or drag & drop here
             </p>
             <p className="text-xs text-muted mt-1">
-              Supports documents, images, video, and archives up to 5GB
+              Documents, images, videos, and archives. Up to 100 MB per file.
             </p>
           </div>
         </div>
@@ -208,13 +208,13 @@ export default function UploadModal({
         
         {selectedFiles.length > 0 && (
           <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
-            <span className="text-xs font-bold text-ink">
+            <span className="text-xs font-semibold text-ink">
               Selected Files ({selectedFiles.length})
             </span>
             {selectedFiles.map((file, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2 rounded-xl bg-white shadow-sm text-xs"
+                className="flex items-center justify-between p-2 rounded-figma bg-white shadow-sm text-xs"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <File className="w-4 h-4 text-muted shrink-0" />

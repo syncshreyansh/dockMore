@@ -5,12 +5,62 @@
 @layer base {
   body {
     @apply bg-background text-ink font-sans;
+    margin: 0;
+  }
+
+  button, input, textarea, select {
+    font: inherit;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid #303030;
+    outline-offset: 3px;
   }
 }
 
-/* Custom scrollbar to match the warm clean aesthetic */
+@layer components {
+  .dm-notice {
+    @apply rounded-figma border border-track bg-sidebar p-4 text-sm font-normal leading-relaxed text-ink;
+    overflow-wrap: anywhere;
+  }
+
+  .dm-notice button, .dm-notice a {
+    @apply font-semibold underline underline-offset-4;
+  }
+
+  .dm-modal-panel {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    @apply border border-track/60;
+  }
+
+  .dm-modal-panel h3 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  .dm-modal-panel input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  .dm-modal-panel textarea, .dm-modal-panel select {
+    @apply rounded-figma border-0 bg-white text-sm text-ink shadow-none;
+  }
+
+  .dm-modal-panel label {
+    @apply font-medium;
+  }
+}
+
+/* Keep every scroll area usable without showing a vertical scrollbar. */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 0;
   height: 6px;
 }
 
@@ -19,26 +69,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D9D8D6;
+  background: #D1D1D1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8A8785;
-}
-
-/* The sidebar scrollbar is visible only while its scroll area is hovered. */
-.sidebar-scroll::-webkit-scrollbar-thumb {
-  background: transparent;
-  transition: background-color 180ms ease-in-out;
-}
-
-.sidebar-scroll:hover::-webkit-scrollbar-thumb {
-  background: #D9D8D6;
-}
-
-.sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
-  background: #8A8785;
+  background: #8C8C8C;
 }
 
 /* Code card dropdown menu animation */
@@ -103,5 +139,45 @@
 .animate-audio-wave {
   animation: audioWave 1.2s ease-in-out infinite;
   transform-origin: bottom;
+}
+
+.dm-media-range {
+  accent-color: #303030;
+  cursor: pointer;
+}
+
+.dm-media-frame:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  background: #303030;
+}
+
+.dm-media-frame:fullscreen video,
+.dm-media-frame:fullscreen img {
+  max-height: calc(100vh - 72px);
+}
+
+@media (hover: hover) {
+  button:not(:disabled):not([role='switch']):not([data-dark-hover-exempt]):not(.dm-media-tile):hover,
+  .dm-hover-dark:not(:disabled):hover {
+    background-color: #303030 !important;
+    border-color: #303030 !important;
+    color: #fff !important;
+  }
+
+  button:not(:disabled):not([role='switch']):not([data-dark-hover-exempt]):not(.dm-media-tile):hover :is(svg, span, p, h1, h2, h3, h4, h5, h6),
+  .dm-hover-dark:not(:disabled):hover :is(svg, span, p, h1, h2, h3, h4, h5, h6) {
+    color: #fff !important;
+  }
+
+  button.dm-media-tile:hover {
+    background-color: #303030;
+    color: #fff;
+  }
+
+  button.dm-media-tile:hover > div:last-child p {
+    color: #fff;
+  }
 }
 

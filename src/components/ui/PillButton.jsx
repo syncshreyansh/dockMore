@@ -23,16 +23,16 @@ export default function PillButton({
     lg: 'rounded-lg',
     md: 'rounded-md',
     sm: 'rounded-sm',
-    xl: 'rounded-xl',
-    '2xl': 'rounded-2xl',
-    '3xl': 'rounded-3xl',
+    xl: 'rounded-figma',
+    '2xl': 'rounded-figma',
+    '3xl': 'rounded-figma',
   };
 
   const hasCustomRounded = className.includes('rounded-');
   const roundedClass = hasCustomRounded ? '' : (roundedClasses[rounded] || 'rounded-figma');
 
   const baseStyles =
-    `inline-flex items-center justify-center font-medium select-none transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${roundedClass}`;
+    `dm-hover-dark inline-flex items-center justify-center font-medium select-none transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${roundedClass}`;
 
   const sizeStyles = {
     xs: 'px-3 py-1.5 text-xs gap-1',
@@ -48,7 +48,7 @@ export default function PillButton({
     light:
       'bg-surface text-ink border border-track/60 hover:border-muted hover:bg-white active:bg-surface',
     danger:
-      'bg-transparent text-red-600 border border-red-200 hover:bg-red-50 active:bg-red-100',
+      'bg-transparent text-red-600 border border-track hover:bg-sidebar active:bg-track/60',
   };
 
   const combinedClasses = `${baseStyles} ${sizeStyles[size] || sizeStyles.md} ${

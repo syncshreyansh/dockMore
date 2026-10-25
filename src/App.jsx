@@ -1,21 +1,35 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import gsap from 'gsap';
 import AppProviders from './context/AppProviders';
 import AppLayout from './components/layout/AppLayout';
-import Home from './pages/Home';
-import AllFiles from './pages/AllFiles';
-import Transfers from './pages/Transfers';
-import Code from './pages/Code';
-import Accounts from './pages/Accounts';
-import Settings from './pages/Settings';
 import IntroLoader, { shouldSkipIntro } from './components/ui/IntroLoader';
 import { IntroProvider } from './context/IntroContext';
 
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
-import CliAuth from './pages/CliAuth';
 import ProtectedRoute, { PublicOnlyRoute } from './components/layout/ProtectedRoute';
+
+const Home = lazy(() => import('./pages/Home'));
+const AllFiles = lazy(() => import('./pages/AllFiles'));
+const Media = lazy(() => import('./pages/Media'));
+const Transfers = lazy(() => import('./pages/Transfers'));
+const Code = lazy(() => import('./pages/Code'));
+const Accounts = lazy(() => import('./pages/Accounts'));
+const Settings = lazy(() => import('./pages/Settings'));
+const SignIn = lazy(() => import('./pages/SignIn'));
+const SignUp = lazy(() => import('./pages/SignUp'));
+const CliAuth = lazy(() => import('./pages/CliAuth'));
+
+function PageLoading() {
+  return (
+    <div role="status" aria-label="Loading page" className="flex min-h-[40vh] w-full items-center justify-center">
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-track border-t-ink" />
+    </div>
+  );
+}
+
+function lazyPage(Page) {
+  return <Suspense fallback={<PageLoading />}><Page /></Suspense>;
+}
 
 export default function App() {
   const [introComplete, setIntroComplete] = useState(shouldSkipIntro);
@@ -73,7 +87,7 @@ export default function App() {
                 path="/signin"
                 element={
                   <PublicOnlyRoute>
-                    <SignIn />
+                    {lazyPage(SignIn)}
                   </PublicOnlyRoute>
                 }
               />
@@ -81,13 +95,13 @@ export default function App() {
                 path="/signup"
                 element={
                   <PublicOnlyRoute>
-                    <SignUp />
+                    {lazyPage(SignUp)}
                   </PublicOnlyRoute>
                 }
               />
 
               
-              <Route path="/cli-auth" element={<CliAuth />} />
+              <Route path="/cli-auth" element={lazyPage(CliAuth)} />
 
               
               <Route
@@ -97,12 +111,13 @@ export default function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route path="/" element={<Home />} />
-                <Route path="/files" element={<AllFiles />} />
-                <Route path="/transfers" element={<Transfers />} />
-                <Route path="/code" element={<Code />} />
-                <Route path="/accounts" element={<Accounts />} />
-                <Route path="/settings" element={<Settings />} />
+                <Route path="/" element={lazyPage(Home)} />
+                <Route path="/files" element={lazyPage(AllFiles)} />
+                <Route path="/media" element={lazyPage(Media)} />
+                <Route path="/transfers" element={lazyPage(Transfers)} />
+                <Route path="/code" element={lazyPage(Code)} />
+                <Route path="/accounts" element={lazyPage(Accounts)} />
+                <Route path="/settings" element={lazyPage(Settings)} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

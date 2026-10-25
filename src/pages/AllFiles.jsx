@@ -1,5 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { getFolderTrail } from '../lib/fileModel';
+import { useIncrementalList } from '../hooks/useIncrementalList';
 import { motion } from 'framer-motion';
 import {
   FolderPlus,
@@ -39,6 +41,7 @@ const PROVIDER_FILTERS = [
 ];
 
 export default function AllFiles() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const folderParam = searchParams.get('folder');
   const searchParam = searchParams.get('search');
@@ -53,8 +56,14 @@ export default function AllFiles() {
     moveFile,
     moveFiles,
     toggleStar,
+    openFolder,
+    currentFolderKey,
+    refetch,
+    downloadFile,
+    error,
   } = useFiles();
   const { accounts } = useAccounts();
+  const expiredAccounts = accounts.filter((account) => account.status === 'expired');
   const { showToast } = useToast();
 
   const [selectedProvider, setSelectedProvider] = useState('all');
@@ -62,6 +71,8 @@ export default function AllFiles() {
   const [sortBy, setSortBy] = useState('modified'); 
   const [viewMode, setViewMode] = useState('grid'); 
   const [selectedIds, setSelectedIds] = useState([]);
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const deferredSearch = useDeferredValue(searchQuery);
 
   
   const [activePreviewFile, setActivePreviewFile] = useState(null);
@@ -78,10 +89,17 @@ export default function AllFiles() {
   });
 
   useEffect(() => {
-    if (searchParam) {
-      setSearchQuery(searchParam);
-    }
+    setSearchQuery(searchParam || '');
   }, [searchParam]);
+
+  useEffect(() => {
+    if (folderParam !== currentFolderKey) {
+      openFolder(folderParam).catch((err) => showToast(err.message, 'error'));
+    }
+  }, [folderParam, currentFolderKey, openFolder, showToast]);
+
+  useEffect(() => { setSelectedIds([]); }, [folderParam]);
+  const folderTrail = useMemo(() => getFolderTrail(folderParam, files), [folderParam, files]);
 
   const currentFolder = useMemo(() => {
     if (!folderParam) return null;
@@ -91,21 +109,24 @@ export default function AllFiles() {
   const filteredFiles = useMemo(() => {
     return files
       .filter((file) => {
-        const matchesFolder = folderParam ? file.folderId === folderParam : true;
+        const matchesFolder = folderParam ? file.parentIds?.includes(folderParam) || file.folderId === folderParam : true;
         const matchesProvider =
           selectedProvider === 'all' || file.provider === selectedProvider;
         const matchesSearch =
-          !searchQuery ||
-          file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          file.accountEmail.toLowerCase().includes(searchQuery.toLowerCase());
+          !deferredSearch ||
+          file.name.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+          file.accountEmail.toLowerCase().includes(deferredSearch.toLowerCase());
         return matchesFolder && matchesProvider && matchesSearch;
       })
       .sort((a, b) => {
         if (sortBy === 'name') return a.name.localeCompare(b.name);
         if (sortBy === 'size') return (b.sizeBytes || 0) - (a.sizeBytes || 0);
-        return 0; 
+        return Number(b.isFolder) - Number(a.isFolder) || (new Date(b.modifiedAt || 0) - new Date(a.modifiedAt || 0));
       });
-  }, [files, folderParam, selectedProvider, searchQuery, sortBy]);
+  }, [files, folderParam, selectedProvider, deferredSearch, sortBy]);
+  const { visibleItems: visibleFiles, hasMore, sentinelRef, loadMore } = useIncrementalList(
+    filteredFiles, 60, `${folderParam || ''}|${selectedProvider}|${deferredSearch}|${sortBy}|${viewMode}`
+  );
 
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
@@ -121,16 +142,19 @@ export default function AllFiles() {
     }
   };
 
-  const handleFileAction = (action, file) => {
+  const handleFileAction = async (action, file) => {
+    if (action === 'preview' && file.isFolder) { setSearchParams({ folder: file.id }); return; }
+    if (action === 'preview' && ['image', 'video', 'audio'].includes(file.type)) { navigate(`/media?file=${encodeURIComponent(file.id)}`); return; }
     if (action === 'download') {
-      showToast(`Downloading ${file.name}...`, 'success');
+      try { await downloadFile(file); showToast(`Downloaded ${file.name}`, 'success'); }
+      catch (err) { showToast(err.message, 'error'); }
     } else if (action === 'share') {
       setActiveShareFile(file);
     } else if (action === 'preview') {
       setActivePreviewFile(file);
     } else if (action === 'star') {
-      toggleStar(file.id);
-      showToast(file.starred ? 'Removed from Starred' : 'Added to Starred', 'info');
+      try { await toggleStar(file.id); showToast(file.starred ? 'Removed from Starred' : 'Added to Starred', 'info'); }
+      catch (err) { showToast(err.message, 'error'); }
     } else if (action === 'rename') {
       setActiveRenameFile(file);
     } else if (action === 'move') {
@@ -146,8 +170,9 @@ export default function AllFiles() {
     }
   };
 
-  const handleBulkDownload = () => {
-    showToast(`Downloading ${selectedIds.length} files...`, 'success');
+  const handleBulkDownload = async () => {
+    try { await Promise.all(filteredFiles.filter((file) => selectedIdSet.has(file.id)).map(downloadFile)); showToast(`Downloaded ${selectedIds.length} files`, 'success'); }
+    catch (err) { showToast(err.message, 'error'); }
   };
 
   const handleBulkMove = () => {
@@ -164,28 +189,24 @@ export default function AllFiles() {
     });
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteConfirmState.ids.length === 1) {
-      deleteFile(deleteConfirmState.ids[0]);
-      showToast('File deleted successfully', 'info');
-    } else if (deleteConfirmState.ids.length > 1) {
-      deleteFiles(deleteConfirmState.ids);
-      showToast(`Deleted ${deleteConfirmState.ids.length} files`, 'info');
-    }
+  const handleConfirmDelete = async () => {
+    try {
+      if (deleteConfirmState.ids.length === 1) await deleteFile(deleteConfirmState.ids[0]);
+      else if (deleteConfirmState.ids.length > 1) await deleteFiles(deleteConfirmState.ids);
+      showToast(`Deleted ${deleteConfirmState.ids.length} file${deleteConfirmState.ids.length === 1 ? '' : 's'}`, 'info');
+    } catch (err) { showToast(err.message, 'error'); return; }
     setSelectedIds((prev) =>
       prev.filter((id) => !deleteConfirmState.ids.includes(id))
     );
     setDeleteConfirmState({ isOpen: false, ids: [], title: '', message: '' });
   };
 
-  const handleExecuteMove = (targetFolderId, newPath) => {
-    if (movingFileIds.length === 1) {
-      moveFile(movingFileIds[0], targetFolderId, newPath);
-      showToast('Moved file successfully', 'success');
-    } else if (movingFileIds.length > 1) {
-      moveFiles(movingFileIds, targetFolderId, newPath);
-      showToast(`Moved ${movingFileIds.length} files to ${newPath}`, 'success');
-    }
+  const handleExecuteMove = async (targetFolderId, newPath) => {
+    try {
+      if (movingFileIds.length === 1) await moveFile(movingFileIds[0], targetFolderId, newPath);
+      else if (movingFileIds.length > 1) await moveFiles(movingFileIds, targetFolderId, newPath);
+      showToast(`Moved ${movingFileIds.length} file${movingFileIds.length === 1 ? '' : 's'}`, 'success');
+    } catch (err) { showToast(err.message, 'error'); return; }
     setMovingFileIds([]);
     setShowMoveModal(false);
   };
@@ -198,6 +219,10 @@ export default function AllFiles() {
 
   return (
     <div className="flex flex-col gap-6">
+
+      {expiredAccounts.length > 0 && <div role="status" className="dm-notice">{expiredAccounts.length === 1 ? `${expiredAccounts[0].name} needs to be reconnected. ` : `${expiredAccounts.length} cloud accounts need to be reconnected. `}<Link to="/accounts">Reconnect from Cloud Accounts</Link>.</div>}
+
+      {error && <div role="alert" className="dm-notice">Some cloud files could not be loaded: {error} {/revoked|expired|reconnect/i.test(error) && <Link to="/accounts" className="ml-2 underline">Reconnect account</Link>} <button className="ml-2 underline" onClick={() => (folderParam ? openFolder(folderParam) : refetch()).catch(() => {})}>Retry</button></div>}
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         
@@ -215,24 +240,9 @@ export default function AllFiles() {
             onClick={clearFolderFilter}
             className={`hover:text-ink transition-colors ${!currentFolder ? 'text-ink font-semibold' : ''}`}
           >
-            Multi-Cloud Storage
+            All Files
           </button>
-          {currentFolder && (
-            <>
-              <ChevronRight className="w-3 h-3" />
-              <span className="text-ink font-bold uppercase flex items-center gap-1 bg-track/40 px-2 py-0.5 rounded-figma">
-                {currentFolder.name}
-                <button
-                  type="button"
-                  onClick={clearFolderFilter}
-                  className="hover:text-ink ml-0.5"
-                  title="Clear folder filter"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            </>
-          )}
+          {folderTrail.map((folder) => <React.Fragment key={folder.id}><ChevronRight className="w-3 h-3" /><button type="button" onClick={() => setSearchParams({ folder: folder.id })} className={`hover:text-ink ${folder.id === folderParam ? 'text-ink font-semibold' : ''}`}>{folder.name}</button></React.Fragment>)}
           {selectedProvider !== 'all' && (
             <>
               <ChevronRight className="w-3 h-3" />
@@ -243,10 +253,10 @@ export default function AllFiles() {
 
         <PillButton
           variant="solid"
-          size="md"
+          size="sm"
           icon={FolderPlus}
           onClick={() => setShowCreateFolderModal(true)}
-          className="font-semibold shadow-sm hover:shadow active:scale-[0.98] transition-all"
+          className="font-semibold shadow-sm hover:shadow active:scale-[0.98] transition-transform"
         >
           New Folder
         </PillButton>
@@ -261,15 +271,15 @@ export default function AllFiles() {
               key={filter.id}
               type="button"
               onClick={() => setSelectedProvider(filter.id)}
-              className={`relative flex items-center gap-2 px-5 py-2.5 text-sm font-bold shrink-0 transition-colors duration-150 ${
-                isActive ? 'text-white' : 'text-ink hover:bg-white rounded-xl'
+              className={`relative flex items-center gap-2 px-5 py-2.5 rounded-figma text-sm font-semibold shrink-0 transition-colors duration-150 ${
+                isActive ? 'text-white' : 'text-ink hover:bg-white'
               }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="filesTabIndicator"
-                  className="absolute inset-0 bg-ink rounded-xl z-0"
-                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                  className="absolute inset-0 bg-ink rounded-figma z-0"
+                  transition={{ type: 'spring', bounce: 0.08, duration: 0.38 }}
                 />
               )}
               <span className="relative z-10 flex items-center gap-2">
@@ -285,7 +295,7 @@ export default function AllFiles() {
 
       
       {selectedIds.length > 0 ? (
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-ink text-white p-3 px-4 rounded-2xl shadow-md">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-ink text-white p-3 px-4 rounded-figma shadow-panel">
           <div className="flex items-center gap-3">
             <div
               onClick={handleSelectAll}
@@ -293,7 +303,7 @@ export default function AllFiles() {
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
             </div>
-            <span className="text-xs font-bold text-white">
+            <span className="text-xs font-semibold text-white">
               {selectedIds.length} {selectedIds.length === 1 ? 'file' : 'files'} selected
             </span>
           </div>
@@ -324,7 +334,7 @@ export default function AllFiles() {
               size="xs"
               icon={Trash2}
               onClick={handleBulkDelete}
-              className="bg-red-500/80 hover:bg-red-500 text-white border-none"
+              className="bg-white/20 hover:bg-white/30 text-white border-none"
             >
               Delete
             </PillButton>
@@ -340,14 +350,14 @@ export default function AllFiles() {
         </div>
       ) : (
         
-        <div className="flex items-center justify-between bg-[#e9e9e9] px-4 py-2.5 rounded-2xl">
+        <div className="flex items-center justify-between bg-[#e9e9e9] px-4 py-2.5 rounded-figma">
           <span className="text-xs text-muted font-medium">
             {filteredFiles.length} {filteredFiles.length === 1 ? 'file' : 'files'}
             {searchQuery && ` matching "${searchQuery}"`}
           </span>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center bg-white border border-track/60 rounded-xl p-1">
+            <div className="flex items-center bg-white border border-track/60 rounded-figma p-1">
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
@@ -389,7 +399,7 @@ export default function AllFiles() {
       <div className="flex flex-col gap-2">
         
         {viewMode === 'list' && (
-          <div className="flex items-center justify-between px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-muted select-none">
+          <div className="flex items-center justify-between px-4 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted select-none">
             <div className="flex items-center gap-3 flex-1">
               <div
                 onClick={handleSelectAll}
@@ -418,17 +428,17 @@ export default function AllFiles() {
 
         
         {loading ? (
-          <div className="bg-surface rounded-2xl py-12 text-center text-sm text-muted">
+          <div className="bg-surface rounded-figma py-12 text-center text-sm text-muted">
             Loading cloud files...
           </div>
         ) : accounts.length === 0 ? (
-          <div className="bg-surface rounded-2xl py-16 px-6 text-center flex flex-col items-center justify-center gap-3">
+          <div className="bg-surface rounded-figma py-16 px-6 text-center flex flex-col items-center justify-center gap-3">
             <div className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center text-ink mb-1">
               <Cloud className="w-6 h-6 stroke-[2]" />
             </div>
-            <h3 className="text-base font-bold text-ink">Connect your first cloud account</h3>
+            <h3 className="text-base font-semibold text-ink">Connect your first cloud account</h3>
             <p className="text-xs text-muted max-w-sm">
-              Link your Google Drive account to browse, search, and aggregate your cloud files in one unified workspace.
+              Connect Google Drive to browse and manage your files.
             </p>
             <PillButton
               variant="solid"
@@ -440,7 +450,7 @@ export default function AllFiles() {
             </PillButton>
           </div>
         ) : filteredFiles.length === 0 ? (
-          <div className="bg-surface rounded-2xl py-12 text-center flex flex-col items-center justify-center gap-2">
+          <div className="bg-surface rounded-figma py-12 text-center flex flex-col items-center justify-center gap-2">
             <p className="text-sm font-semibold text-ink">No files found</p>
             <p className="text-xs text-muted">
               {currentFolder
@@ -460,11 +470,11 @@ export default function AllFiles() {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pt-2">
-            {filteredFiles.map((file) => (
+            {visibleFiles.map((file) => (
               <FileGridCard
                 key={file.id}
                 file={file}
-                isSelected={selectedIds.includes(file.id)}
+                isSelected={selectedIdSet.has(file.id)}
                 onToggleSelect={handleToggleSelect}
                 onAction={handleFileAction}
                 onSelect={() => handleFileAction('preview', file)}
@@ -472,16 +482,21 @@ export default function AllFiles() {
             ))}
           </div>
         ) : (
-          filteredFiles.map((file) => (
+          visibleFiles.map((file) => (
             <FileRow
               key={file.id}
               file={file}
-              isSelected={selectedIds.includes(file.id)}
+              isSelected={selectedIdSet.has(file.id)}
               onToggleSelect={handleToggleSelect}
               onAction={handleFileAction}
               onSelect={() => handleFileAction('preview', file)}
             />
           ))
+        )}
+        {hasMore && !loading && (
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            <PillButton variant="ghost" size="sm" onClick={loadMore}>Show more files</PillButton>
+          </div>
         )}
       </div>
 
@@ -503,10 +518,10 @@ export default function AllFiles() {
         isOpen={Boolean(activeRenameFile)}
         initialName={activeRenameFile?.name || ''}
         title="Rename File"
-        onRename={(newName) => {
+        onRename={async (newName) => {
           if (activeRenameFile) {
-            renameFile(activeRenameFile.id, newName);
-            showToast(`Renamed file to "${newName}"`, 'success');
+            try { await renameFile(activeRenameFile.id, newName); showToast(`Renamed file to "${newName}"`, 'success'); }
+            catch (err) { showToast(err.message, 'error'); }
           }
           setActiveRenameFile(null);
         }}

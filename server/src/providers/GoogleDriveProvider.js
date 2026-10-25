@@ -13,7 +13,7 @@ class GoogleDriveProvider extends CloudProvider {
     
     this._oauth2Config = {
       clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET.trim(),
+      clientSecret: (process.env.GOOGLE_CLIENT_SECRET || '').trim(),
       redirectUri: process.env.GOOGLE_REDIRECT_URI,
     };
   }
@@ -47,26 +47,88 @@ class GoogleDriveProvider extends CloudProvider {
     const auth = this._getClient(accessToken);
     const drive = google.drive({ version: 'v3', auth });
 
-    const query = folderId === 'root'
+    const escapedFolderId = String(folderId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const query = folderId === '*'
+      ? 'trashed = false'
+      : folderId === 'root'
       ? `'root' in parents and trashed = false`
-      : `'${folderId}' in parents and trashed = false`;
+      : `'${escapedFolderId}' in parents and trashed = false`;
 
-    const response = await drive.files.list({
-      q: query,
-      fields: 'files(id, name, mimeType, size, modifiedTime, parents)',
-      pageSize: 100,
-      orderBy: 'name',
-    });
+    const files = [];
+    const readCorpus = async (corpus = {}) => {
+      let pageToken;
+      do {
+      const response = await drive.files.list({
+        q: query,
+        fields: 'nextPageToken,incompleteSearch,files(id,name,mimeType,size,modifiedTime,parents,starred,webViewLink,hasThumbnail,shortcutDetails,videoMediaMetadata)',
+        pageSize: 1000,
+        orderBy: 'name',
+        pageToken,
+        spaces: 'drive',
+        corpora: 'user',
+        includeItemsFromAllDrives: true,
+        supportsAllDrives: true,
+        ...corpus,
+      });
+      if (response.data.incompleteSearch) throw new Error('Google Drive returned an incomplete listing. Please retry the sync.');
+      files.push(...(response.data.files || []));
+      pageToken = response.data.nextPageToken;
+      } while (pageToken);
+    };
+    let folderCorpus = {};
+    if (folderId !== '*' && folderId !== 'root') {
+      const { data: folder } = await drive.files.get({ fileId: folderId, fields: 'driveId', supportsAllDrives: true });
+      if (folder.driveId) folderCorpus = { corpora: 'drive', driveId: folder.driveId };
+    }
+    await readCorpus(folderCorpus);
+    if (folderId === '*') {
+      let pageToken;
+      do {
+        const { data } = await drive.drives.list({ pageSize: 100, pageToken, fields: 'nextPageToken,drives(id,name)' });
+        for (const sharedDrive of data.drives || []) {
+          files.push({ id: sharedDrive.id, name: sharedDrive.name, mimeType: 'application/vnd.google-apps.folder', parents: [] });
+          await readCorpus({ corpora: 'drive', driveId: sharedDrive.id });
+        }
+        pageToken = data.nextPageToken;
+      } while (pageToken);
+    }
 
-    return (response.data.files || []).map((f) => ({
+    return [...new Map(files.map((file) => [file.id, file])).values()].map((f) => ({
       id: f.id,
       name: f.name,
       mimeType: f.mimeType,
       size: f.size ? parseInt(f.size, 10) : null,
       modifiedAt: f.modifiedTime,
-      isFolder: f.mimeType === 'application/vnd.google-apps.folder',
+      isFolder: (f.shortcutDetails?.targetMimeType || f.mimeType) === 'application/vnd.google-apps.folder',
+      shortcutDetails: f.shortcutDetails || null,
+      hasThumbnail: Boolean(f.hasThumbnail),
+      videoMediaMetadata: f.videoMediaMetadata || null,
       parents: f.parents || [],
+      starred: Boolean(f.starred),
+      webViewLink: f.webViewLink || null,
     }));
+  }
+
+  async updateFile(accessToken, fileId, update) {
+    const auth = this._getClient(accessToken);
+    const drive = google.drive({ version: 'v3', auth });
+    const current = update.parentId !== undefined
+      ? await drive.files.get({ fileId, fields: 'parents,driveId', supportsAllDrives: true })
+      : null;
+    const response = await drive.files.update({
+      fileId,
+      supportsAllDrives: true,
+      requestBody: {
+        ...(update.name !== undefined ? { name: update.name } : {}),
+        ...(update.starred !== undefined ? { starred: update.starred } : {}),
+      },
+      ...(update.parentId !== undefined ? {
+        addParents: update.parentId || current.data.driveId || 'root',
+        ...((current.data.parents || []).length ? { removeParents: current.data.parents.join(',') } : {}),
+      } : {}),
+      fields: 'id, name, mimeType, size, modifiedTime, parents, starred, webViewLink',
+    });
+    return response.data;
   }
 
   
@@ -83,6 +145,7 @@ class GoogleDriveProvider extends CloudProvider {
       requestBody,
       media: { mimeType: meta.mimeType, body: fileStream },
       fields: 'id, name',
+      supportsAllDrives: true,
     });
 
     return { id: response.data.id, name: response.data.name };
@@ -90,22 +153,40 @@ class GoogleDriveProvider extends CloudProvider {
 
   
   async downloadFile(accessToken, fileId) {
+    return (await this.getContentResponse(accessToken, fileId)).data;
+  }
+
+  async getContentResponse(accessToken, fileId, range) {
     const auth = this._getClient(accessToken);
     const drive = google.drive({ version: 'v3', auth });
-
-    const response = await drive.files.get(
-      { fileId, alt: 'media' },
-      { responseType: 'stream' }
+    return drive.files.get(
+      { fileId, alt: 'media', supportsAllDrives: true },
+      { responseType: 'stream', ...(range ? { headers: { Range: range } } : {}) }
     );
+  }
 
-    return response.data; 
+  async getThumbnailResponse(accessToken, fileId) {
+    const auth = this._getClient(accessToken);
+    const drive = google.drive({ version: 'v3', auth });
+    const { data } = await drive.files.get({ fileId, supportsAllDrives: true, fields: 'thumbnailLink' });
+    if (!data.thumbnailLink) { const error = new Error('No thumbnail available'); error.status = 404; throw error; }
+    const url = new URL(data.thumbnailLink);
+    if (url.protocol !== 'https:' || !/(^|\.)(googleusercontent\.com|google\.com)$/.test(url.hostname)) throw new Error('Invalid thumbnail host');
+    return auth.request({ url: url.href, responseType: 'stream' });
+  }
+
+  async getFileMetadata(accessToken, fileId) {
+    const auth = this._getClient(accessToken);
+    const drive = google.drive({ version: 'v3', auth });
+    const { data } = await drive.files.get({ fileId, supportsAllDrives: true, fields: 'id,name,mimeType,size,parents,shortcutDetails,capabilities(canDownload)' });
+    return data;
   }
 
   
   async deleteFile(accessToken, fileId) {
     const auth = this._getClient(accessToken);
     const drive = google.drive({ version: 'v3', auth });
-    await drive.files.delete({ fileId });
+    await drive.files.delete({ fileId, supportsAllDrives: true });
   }
 
   
@@ -122,9 +203,23 @@ class GoogleDriveProvider extends CloudProvider {
     const response = await drive.files.create({
       requestBody,
       fields: 'id, name',
+      supportsAllDrives: true,
     });
 
     return { id: response.data.id, name: response.data.name };
+  }
+
+  async createPublicReadPermission(accessToken, fileId) {
+    const auth = this._getClient(accessToken);
+    const drive = google.drive({ version: 'v3', auth });
+    await drive.permissions.create({
+      fileId,
+      supportsAllDrives: true,
+      requestBody: { type: 'anyone', role: 'reader' },
+      fields: 'id',
+    });
+    const { data } = await drive.files.get({ fileId, fields: 'webViewLink', supportsAllDrives: true });
+    return data.webViewLink;
   }
 
   

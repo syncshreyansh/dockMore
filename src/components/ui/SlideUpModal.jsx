@@ -6,7 +6,7 @@ export default function SlideUpModal({
   isOpen,
   onClose,
   children,
-  panelClassName = 'bg-surface rounded-3xl p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-2xl',
+  panelClassName = 'bg-surface rounded-figma p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-menu',
   closeOnBackdrop = true,
 }) {
   const overlayRef = useRef(null);
@@ -43,15 +43,13 @@ export default function SlideUpModal({
       
       gsap.fromTo(
         panel,
-        { y: bottomDistance, filter: 'blur(16px)', opacity: 1, scale: 1 },
+        { y: bottomDistance, opacity: 1, scale: 1 },
         {
           y: 0,
-          filter: 'blur(0px)',
           opacity: 1,
           scale: 1,
           duration: 0.55,
           ease: 'power3.inOut',
-          clearProps: 'filter', 
         }
       );
     } else {
@@ -67,7 +65,6 @@ export default function SlideUpModal({
       
       tl.to(panel, {
         y: topDistance,
-        filter: 'blur(14px)',
         opacity: 1,
         duration: 0.45,
         ease: 'power3.inOut',
@@ -96,16 +93,18 @@ export default function SlideUpModal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 overflow-hidden"
       onClick={handleOverlayClick}
       style={{ opacity: 0 }}
     >
       <div
         ref={panelRef}
-        className={panelClassName}
+        role="dialog"
+        aria-modal="true"
+        className={`dm-modal-panel ${panelClassName}`}
         style={{
           transform: 'translateY(120vh)',
-          willChange: 'transform, filter',
+          willChange: 'transform, opacity',
         }}
       >
         {children}

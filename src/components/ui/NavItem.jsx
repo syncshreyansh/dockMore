@@ -17,10 +17,10 @@ export default function NavItem({
       end={end}
       onClick={onClick}
       className={({ isActive }) =>
-        `relative group flex items-center justify-start px-4 py-3 text-[15px] transition-colors duration-150 select-none mx-1 w-[calc(100%-0.5rem)] ${
+        `dm-hover-dark relative group flex items-center justify-start px-4 py-3 rounded-figma text-[15px] transition-colors duration-150 select-none mx-1 w-[calc(100%-0.5rem)] ${
           isActive
             ? 'text-white font-semibold shadow-none'
-            : 'text-ink font-semibold hover:bg-black/5 rounded-figma'
+            : 'text-ink font-semibold hover:bg-black/5'
         } ${className}`
       }
     >
@@ -30,7 +30,7 @@ export default function NavItem({
             <motion.div
               layoutId="sidebarNavIndicator"
               className="absolute inset-0 bg-[#303030] rounded-figma z-0"
-              transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+              transition={{ type: 'spring', bounce: 0.08, duration: 0.38 }}
             />
           )}
           <div className="relative z-10 flex items-center gap-3">

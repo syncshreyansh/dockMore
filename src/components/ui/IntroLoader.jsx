@@ -92,13 +92,11 @@ export default function IntroLoader({ onExitStart, onComplete }) {
           letters,
           {
             opacity: 0,
-            filter: 'blur(6px)',
             y: 8,
             force3D: true,
           },
           {
             opacity: 1,
-            filter: 'blur(0px)',
             y: 0,
             duration: LETTER_DURATION,
             ease: 'power3.out',

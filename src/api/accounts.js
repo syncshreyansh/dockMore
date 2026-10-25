@@ -3,13 +3,9 @@ import { supabase } from '../lib/supabase';
 import defaultAvatar from '../assets/icons/avatar.svg';
 
 export async function getAccounts() {
-  try {
-    const data = await apiClient.get('/api/accounts');
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    console.error('[getAccounts] Error fetching accounts from backend:', err);
-    return [];
-  }
+  const data = await apiClient.get('/api/accounts');
+  if (!Array.isArray(data)) throw new Error('Invalid accounts response from server');
+  return data;
 }
 
 export async function getAccountById(id) {

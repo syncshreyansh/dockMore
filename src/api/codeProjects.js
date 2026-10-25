@@ -1,7 +1,6 @@
 import { apiClient } from '../lib/apiClient';
 
 export async function getCodeProjects() {
-  try {
     const res = await apiClient.get('/api/code-projects');
     const projects = res.projects || [];
 
@@ -14,7 +13,7 @@ export async function getCodeProjects() {
       accountId: p.backup_account_id,
       provider: p.backup_provider || 'google-drive',
       accountEmail: p.backup_account_email || '',
-      snapshotCount: 0,
+      snapshotCount: p.snapshot_count || 0,
       lastSnapshot: p.last_snapshot_at
         ? new Date(p.last_snapshot_at).toLocaleTimeString([], {
             hour: '2-digit',
@@ -25,12 +24,8 @@ export async function getCodeProjects() {
       lastCommitTime: p.last_commit_at
         ? new Date(p.last_commit_at).toLocaleDateString()
         : 'Never',
-      branch: 'main',
+      branch: p.branch || 'Unknown',
     }));
-  } catch (err) {
-    console.error('[getCodeProjects] Error:', err);
-    return [];
-  }
 }
 
 export async function getProjectById(id) {
@@ -44,12 +39,12 @@ export async function getProjectById(id) {
     accountId: p.backup_account_id,
     provider: p.backup_provider || 'google-drive',
     accountEmail: p.backup_account_email || '',
-    snapshots: p.snapshots || [],
-    snapshotCount: p.snapshots?.length || 0,
+    snapshots: (p.snapshots || []).map(mapSnapshot),
+    snapshotCount: p.snapshot_count || 0,
     lastSnapshot: p.last_snapshot_at ? new Date(p.last_snapshot_at).toLocaleString() : 'Never',
     lastCommitMessage: p.last_commit_message || '',
     lastCommitTime: p.last_commit_at ? new Date(p.last_commit_at).toLocaleString() : '',
-    branch: 'main',
+    branch: p.branch || 'Unknown',
   };
 }
 
@@ -73,7 +68,7 @@ export async function createCodeProject(projectData) {
     lastSnapshot: 'Never',
     lastCommitMessage: '',
     lastCommitTime: 'Never',
-    branch: 'main',
+    branch: p.branch || 'Unknown',
   };
 }
 
@@ -100,11 +95,16 @@ export async function toggleWatchStatus(id) {
 }
 
 export async function getProjectSnapshots(projectId) {
-  try {
-    const project = await getProjectById(projectId);
-    return project.snapshots || [];
-  } catch (err) {
-    console.error(`[getProjectSnapshots] Error for ${projectId}:`, err);
-    return [];
-  }
+  const project = await getProjectById(projectId);
+  return project.snapshots || [];
+}
+
+function mapSnapshot(snapshot) {
+  return {
+    id: snapshot.id,
+    hash: snapshot.snapshot_key?.slice(0, 7) || '',
+    summary: snapshot.snapshot_key ? `Snapshot ${snapshot.snapshot_key.slice(0, 7)}` : 'Snapshot',
+    details: `${snapshot.files_changed_count ?? 0} files changed`,
+    timestamp: snapshot.taken_at ? new Date(snapshot.taken_at).toLocaleString() : '',
+  };
 }

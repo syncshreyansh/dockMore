@@ -11,13 +11,13 @@ export default function AppProviders({ children }) {
     <ToastProvider>
       <AuthProvider>
         <AccountsProvider>
-          <FilesProvider>
-            <TransfersProvider>
+          <TransfersProvider>
+            <FilesProvider>
               <CodeProjectsProvider>
                 {children}
               </CodeProjectsProvider>
-            </TransfersProvider>
-          </FilesProvider>
+            </FilesProvider>
+          </TransfersProvider>
         </AccountsProvider>
       </AuthProvider>
     </ToastProvider>

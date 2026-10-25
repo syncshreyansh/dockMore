@@ -4,20 +4,13 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const db = require('../db/connection');
+const crypto = require('crypto');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('[requireAuth] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing in environment variables!');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  : null;
 
 async function requireAuth(req, res, next) {
   try {
@@ -26,8 +19,6 @@ async function requireAuth(req, res, next) {
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7).trim();
-    } else if (req.query && req.query.token) {
-      token = String(req.query.token).trim();
     }
 
     if (!token) {
@@ -36,6 +27,28 @@ async function requireAuth(req, res, next) {
         message: 'Missing Authorization Bearer token',
       });
     }
+
+    if (token.startsWith('dmcli_')) {
+      const cliPath = req.originalUrl.split('?')[0];
+      const allowed = cliPath.startsWith('/api/cli/') ||
+        cliPath.startsWith('/api/code-projects') ||
+        (req.method === 'GET' && cliPath === '/api/accounts');
+      if (!allowed) return res.status(403).json({ error: 'CLI credential is not permitted for this endpoint' });
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const credential = await db('cli_credentials as cc')
+        .join('users as u', 'cc.user_id', 'u.id')
+        .where('cc.token_hash', tokenHash)
+        .whereNull('cc.revoked_at')
+        .where('cc.expires_at', '>', new Date())
+        .select('cc.id as credential_id', 'u.id', 'u.email', 'u.name')
+        .first();
+      if (!credential) return res.status(401).json({ error: 'CLI credential expired or revoked' });
+      req.user = { id: credential.id, email: credential.email, name: credential.name };
+      req.cliCredentialId = credential.credential_id;
+      return next();
+    }
+
+    if (!supabaseAdmin) return res.status(503).json({ error: 'Authentication service is not configured' });
 
     const { data: { user: sbUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
 

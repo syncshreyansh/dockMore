@@ -1,63 +1,152 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus,
-  Loader2,
 } from 'lucide-react';
 import PillButton from '../components/ui/PillButton';
-import TrackProjectModal from '../components/ui/TrackProjectModal';
 import SnapshotHistoryModal from '../components/ui/SnapshotHistoryModal';
 import CodeProjectCard from '../components/ui/CodeProjectCard';
+import GitPushReviewModal from '../components/ui/GitPushReviewModal';
 import { useCodeProjects } from '../hooks/useCodeProjects';
 import { useToast } from '../context/ToastContext';
+import { runLocalCodeAction } from '../api/localCodeControl';
 
 export default function Code() {
   const {
     projects,
     loading,
-    addProject,
     removeProject,
-    pushToGitHub,
-    toggleWatch,
-    updateProjectBackupAccount,
     getSnapshots,
+    error,
+    refetch,
+    refreshSnapshots,
   } = useCodeProjects();
   const { showToast } = useToast();
 
-  const [showTrackModal, setShowTrackModal] = useState(false);
   const [activeProjectForSnapshots, setActiveProjectForSnapshots] = useState(null);
+  const [pushReview, setPushReview] = useState(null);
+  const [busyProjectId, setBusyProjectId] = useState(null);
+  const [pushActivity, setPushActivity] = useState(null);
+  const pushReviewRequestRef = useRef(0);
 
-  const handleTrackProject = async (formData) => {
-    const newProj = await addProject(formData);
-    showToast(`Started tracking "${newProj.name}" in shadow git`, 'success');
-  };
+  useEffect(() => {
+    if (!activeProjectForSnapshots) return undefined;
+    const refresh = () => refreshSnapshots(activeProjectForSnapshots.id).catch((err) => showToast(err.message, 'error'));
+    refresh();
+    const timer = setInterval(refresh, 5000);
+    return () => clearInterval(timer);
+  }, [activeProjectForSnapshots, refreshSnapshots, showToast]);
 
   const handlePush = async (project) => {
+    if (busyProjectId) return;
+    const requestId = ++pushReviewRequestRef.current;
+    setPushReview({ projectId: project.id, projectName: project.name, loading: true });
+    setPushActivity({ projectId: project.id, phase: 'reviewing' });
+    setBusyProjectId(project.id);
     try {
-      await pushToGitHub(project.id);
-      showToast(
-        `Pushed 1 clean commit to GitHub for "${project.name}"`,
-        'success'
-      );
+      const review = await runLocalCodeAction(project.id, 'push-review');
+      if (requestId !== pushReviewRequestRef.current) return;
+      setPushReview({ ...review, projectId: project.id, projectName: project.name });
+      setPushActivity({ projectId: project.id, phase: 'ready' });
     } catch (err) {
-      showToast(err.message || 'Failed to push to GitHub', 'error');
+      if (requestId !== pushReviewRequestRef.current) return;
+      setPushReview({ projectId: project.id, projectName: project.name, error: err.message || 'Could not review this project for push' });
+      setPushActivity(null);
+    } finally {
+      if (requestId === pushReviewRequestRef.current) setBusyProjectId(null);
     }
   };
 
-  const handleToggleWatch = (project) => {
-    toggleWatch(project.id);
+  const handleClosePushReview = () => {
+    if (busyProjectId && !pushReview?.loading) return;
+    pushReviewRequestRef.current += 1;
+    setPushReview(null);
+    setPushActivity(null);
+    setBusyProjectId(null);
   };
 
-  const handleUpdateBackupAccount = (project, accountData) => {
-    updateProjectBackupAccount(project.id, accountData);
+  const handleToggleWatch = async (project) => {
+    if (busyProjectId) return;
+    setBusyProjectId(project.id);
+    const action = project.watchStatus === 'watching' ? 'pause' : 'watch';
+    try {
+      await runLocalCodeAction(project.id, action);
+      await refetch();
+      showToast(action === 'watch' ? `Watching "${project.name}".` : `Paused "${project.name}".`, 'success');
+    } catch (err) {
+      showToast(err.message || `Could not ${action} this project`, 'error');
+    } finally {
+      setBusyProjectId(null);
+    }
   };
 
-  const handleRemoveProject = (project) => {
-    removeProject(project.id);
-    showToast(`Removed "${project.name}" from tracking`, 'info');
+  const handleConfirmPush = async ({ message, warningsAcknowledged }) => {
+    if (!pushReview || busyProjectId) return;
+    setPushActivity({ projectId: pushReview.projectId, phase: 'pushing' });
+    setBusyProjectId(pushReview.projectId);
+    try {
+      if (pushReview.pendingPush) {
+        await runLocalCodeAction(pushReview.projectId, 'push-retry');
+      } else {
+        await runLocalCodeAction(pushReview.projectId, 'push', {
+          reviewId: pushReview.reviewId,
+          remote: pushReview.remote,
+          message,
+          warningsAcknowledged,
+        });
+      }
+      setPushReview(null);
+      await refetch();
+      setPushActivity({ projectId: pushReview.projectId, phase: 'success' });
+      window.setTimeout(() => {
+        setPushActivity((current) => current?.projectId === pushReview.projectId && current.phase === 'success' ? null : current);
+      }, 1900);
+      showToast('Git push completed.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Git push failed', 'error');
+      setPushActivity({ projectId: pushReview.projectId, phase: 'ready' });
+      try {
+        const next = await runLocalCodeAction(pushReview.projectId, 'push-review');
+        setPushReview({ ...next, projectId: pushReview.projectId, projectName: pushReview.projectName });
+      } catch { /* Keep the current review visible. */ }
+    } finally {
+      setBusyProjectId(null);
+    }
+  };
+
+  const handlePushRemoteChange = async (remote) => {
+    if (!pushReview || busyProjectId) return;
+    const requestId = ++pushReviewRequestRef.current;
+    const previousReview = pushReview;
+    setPushReview({ projectId: pushReview.projectId, projectName: pushReview.projectName, loading: true });
+    setBusyProjectId(pushReview.projectId);
+    try {
+      const next = await runLocalCodeAction(pushReview.projectId, 'push-review', { remote });
+      if (requestId !== pushReviewRequestRef.current) return;
+      setPushReview({ ...next, projectId: pushReview.projectId, projectName: pushReview.projectName });
+    } catch (err) {
+      if (requestId !== pushReviewRequestRef.current) return;
+      setPushReview(previousReview);
+      showToast(err.message || 'Could not review this Git remote', 'error');
+    } finally {
+      if (requestId === pushReviewRequestRef.current) setBusyProjectId(null);
+    }
+  };
+
+  const handleRemoveProject = async (project) => {
+    try {
+      if (project.watchStatus === 'watching' || project.watchStatus === 'stale') {
+        await runLocalCodeAction(project.id, 'pause');
+      }
+      await removeProject(project.id);
+      showToast(`Removed "${project.name}" from the dashboard. The local shadow repository remains.`, 'info');
+    }
+    catch (err) { showToast(err.message || 'Could not remove project', 'error'); }
   };
 
   return (
     <div className="flex flex-col gap-6">
+
+      {error && <div role="alert" className="dm-notice">Code projects could not be loaded: {error} <button className="ml-2 underline" onClick={() => refetch().catch(() => {})}>Retry</button></div>}
       
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted font-medium">
@@ -68,9 +157,9 @@ export default function Code() {
           variant="solid"
           size="sm"
           icon={Plus}
-          onClick={() => setShowTrackModal(true)}
+          onClick={() => showToast('Run dockmore initialize from the project directory to set up local tracking.', 'info')}
         >
-          Track New Project
+          Set Up Project in CLI
         </PillButton>
       </div>
 
@@ -85,11 +174,12 @@ export default function Code() {
             <CodeProjectCard
               key={project.id}
               project={project}
+              busy={busyProjectId === project.id}
+              pushPhase={pushActivity?.projectId === project.id ? pushActivity.phase : 'idle'}
               onPushToGitHub={handlePush}
               onToggleWatch={handleToggleWatch}
               onViewSnapshots={(proj) => setActiveProjectForSnapshots(proj)}
               onRemoveProject={handleRemoveProject}
-              onChangeBackupAccount={handleUpdateBackupAccount}
             />
           ))
         )}
@@ -97,12 +187,12 @@ export default function Code() {
         
         <button
           type="button"
-          onClick={() => setShowTrackModal(true)}
+          onClick={() => showToast('Run dockmore initialize from the project directory to set up local tracking.', 'info')}
           className="group cursor-pointer"
           style={{
-            borderRadius: '20px',
-            border: '2px dashed #D9D8D6',
-            background: 'transparent',
+            borderRadius: '14px',
+            border: '1px solid #D1D1D1',
+            background: '#E9E9E9',
             padding: '28px',
             display: 'flex',
             flexDirection: 'column',
@@ -114,12 +204,12 @@ export default function Code() {
             transition: 'border-color 0.15s ease, background 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#8A8785';
-            e.currentTarget.style.background = 'rgba(250,250,249,0.5)';
+            e.currentTarget.style.borderColor = '#8C8C8C';
+            e.currentTarget.style.background = '#FFFFFF';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#D9D8D6';
-            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = '#D1D1D1';
+            e.currentTarget.style.background = '#E9E9E9';
           }}
         >
           <div
@@ -138,21 +228,15 @@ export default function Code() {
             <Plus className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-ink">Track New Project</h4>
+            <h4 className="text-sm font-semibold text-ink">Set Up in CLI</h4>
             <p className="text-xs text-muted max-w-[200px] mt-1">
-              Initialize shadow git snapshots and cloud mirroring for a repo.
+              Run dockmore initialize in the repository directory.
             </p>
           </div>
         </button>
       </div>
 
       
-      <TrackProjectModal
-        isOpen={showTrackModal}
-        onClose={() => setShowTrackModal(false)}
-        onTrackProject={handleTrackProject}
-      />
-
       
       <SnapshotHistoryModal
         isOpen={Boolean(activeProjectForSnapshots)}
@@ -163,7 +247,14 @@ export default function Code() {
             : []
         }
         onClose={() => setActiveProjectForSnapshots(null)}
-        onPushToGitHub={handlePush}
+      />
+      <GitPushReviewModal
+        review={pushReview}
+        busy={Boolean(busyProjectId) && !pushReview?.loading}
+        onClose={handleClosePushReview}
+        onConfirm={handleConfirmPush}
+        onRemoteChange={handlePushRemoteChange}
+        onRetry={() => handlePush({ id: pushReview.projectId, name: pushReview.projectName })}
       />
     </div>
   );

@@ -12,6 +12,7 @@ import {
   Share2,
   Trash2,
   FolderInput,
+  FolderOpen,
   Edit3,
   Check,
 } from 'lucide-react';
@@ -96,7 +97,7 @@ export default function FileRow({
     starred = false,
   } = file;
 
-  const FileTypeIcon = getFileIcon(extension);
+  const FileTypeIcon = file.isFolder ? FolderOpen : getFileIcon(extension);
 
   return (
     <div
@@ -106,7 +107,7 @@ export default function FileRow({
         e.stopPropagation();
         setMenuOpen(true);
       }}
-      className={`group flex items-center justify-between py-3 px-4 rounded-xl cursor-pointer select-none transition-all duration-150 ease-out ${
+      className={`group flex items-center justify-between py-3 px-4 rounded-figma cursor-pointer select-none transition-colors duration-150 ease-out ${
         isSelected
           ? 'bg-white hover:bg-[#303030] ring-2 ring-ink shadow-sm'
           : 'bg-white hover:bg-[#303030] shadow-sm'
@@ -140,7 +141,7 @@ export default function FileRow({
               {name}
             </h5>
             {starred && (
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+              <Star className="w-3.5 h-3.5 fill-ink text-ink shrink-0" />
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
@@ -212,7 +213,7 @@ export default function FileRow({
           
           {menuOpen && (
             <div
-              className="absolute right-0 top-full mt-1 bg-white border border-track/60 shadow-[0_4px_24px_rgba(0,0,0,0.14)] rounded-2xl p-1.5 min-w-[150px] z-50 flex flex-col gap-1 text-ink"
+              className="absolute right-0 top-full mt-1 bg-white border border-track/60 shadow-menu rounded-figma p-1.5 min-w-[150px] z-50 flex flex-col gap-1 text-ink"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -221,7 +222,7 @@ export default function FileRow({
                   setMenuOpen(false);
                   onAction && onAction('preview', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 transition-colors text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 transition-colors text-left"
               >
                 <FileText className="w-3.5 h-3.5 text-muted" />
                 <span>View Details</span>
@@ -233,7 +234,7 @@ export default function FileRow({
                   setMenuOpen(false);
                   onAction && onAction('star', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 transition-colors text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 transition-colors text-left"
               >
                 <Star className="w-3.5 h-3.5 text-muted" />
                 <span>{starred ? 'Unstar' : 'Add to Starred'}</span>
@@ -245,7 +246,7 @@ export default function FileRow({
                   setMenuOpen(false);
                   onAction && onAction('rename', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 transition-colors text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 transition-colors text-left"
               >
                 <Edit3 className="w-3.5 h-3.5 text-muted" />
                 <span>Rename</span>
@@ -257,7 +258,7 @@ export default function FileRow({
                   setMenuOpen(false);
                   onAction && onAction('move', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-black/5 transition-colors text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold hover:bg-black/5 transition-colors text-left"
               >
                 <FolderInput className="w-3.5 h-3.5 text-muted" />
                 <span>Move to...</span>
@@ -271,7 +272,7 @@ export default function FileRow({
                   setMenuOpen(false);
                   onAction && onAction('delete', file);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-figma text-xs font-semibold text-red-600 hover:bg-sidebar transition-colors text-left"
               >
                 <Trash2 className="w-3.5 h-3.5 text-red-500" />
                 <span>Delete</span>

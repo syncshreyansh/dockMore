@@ -36,13 +36,15 @@ export async function listAccounts() {
     return accounts;
   } catch (err) {
     spinner.fail(chalk.red(`Failed to fetch accounts: ${err.message}`));
-    return [];
+    throw err;
   }
 }
 
 function buildBar(used, total) {
   const width = 20;
-  const filled = Math.round((used / total) * width);
+  const ratio = Number.isFinite(Number(used)) && Number.isFinite(Number(total)) && Number(total) > 0
+    ? Math.max(0, Math.min(1, Number(used) / Number(total))) : 0;
+  const filled = Math.round(ratio * width);
   const empty = width - filled;
   return chalk.green('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
 }

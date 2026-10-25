@@ -1,67 +1,89 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import {
   getAccounts,
   getUserProfile,
   syncAccount as apiSyncAccount,
   disconnectAccount as apiDisconnectAccount,
 } from '../api/accounts';
-import { supabase } from '../lib/supabase';
-import { API_BASE_URL } from '../lib/apiClient';
+import { apiClient } from '../lib/apiClient';
 import { useAuth } from './AuthContext';
 
 const AccountsContext = createContext(null);
 
 export function AccountsProvider({ children }) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, signOut: authSignOut } = useAuth();
+  const authUserId = authUser?.id || null;
 
   const [accounts, setAccounts] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const activeUserId = useRef(authUserId);
+  activeUserId.current = authUserId;
+  const loadedUserId = useRef(null);
+  const inFlight = useRef(null);
 
-  const fetchAccountsAndUser = useCallback(async () => {
-    if (!authUser) {
+  const fetchAccountsAndUser = useCallback(async (options = {}) => {
+    if (!authUserId) {
+      loadedUserId.current = null;
       setAccounts([]);
       setUser(null);
       setLoading(false);
       return;
     }
-
-    try {
+    if (inFlight.current?.userId === authUserId) return inFlight.current.promise;
+    const firstLoad = loadedUserId.current !== authUserId;
+    if (firstLoad) {
+      setAccounts([]);
+      setUser(null);
       setLoading(true);
-      setError(null);
-      const [fetchedAccounts, fetchedUser] = await Promise.all([
-        getAccounts(),
-        getUserProfile(),
-      ]);
+    }
+    if (firstLoad || !options.silent) setError(null);
+    const promise = Promise.all([getAccounts(), getUserProfile()]).then(([fetchedAccounts, fetchedUser]) => {
+      if (activeUserId.current !== authUserId) return;
       setAccounts(fetchedAccounts);
       setUser(fetchedUser);
-    } catch (err) {
+      loadedUserId.current = authUserId;
+      setError(null);
+    }).catch((err) => {
+      if (activeUserId.current !== authUserId) return;
       console.error('[AccountsProvider] Failed to fetch accounts:', err);
       setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [authUser]);
+    }).finally(() => {
+      if (activeUserId.current === authUserId) setLoading(false);
+      if (inFlight.current?.userId === authUserId) inFlight.current = null;
+    });
+    inFlight.current = { userId: authUserId, promise };
+    return promise;
+  }, [authUserId]);
 
   useEffect(() => {
     fetchAccountsAndUser();
   }, [fetchAccountsAndUser]);
+
+  useEffect(() => {
+    if (!authUserId) return undefined;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') fetchAccountsAndUser({ silent: true });
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [authUserId, fetchAccountsAndUser]);
 
   const syncAccount = useCallback(async (id) => {
     try {
       const res = await apiSyncAccount(id);
       setAccounts((prev) =>
         prev.map((acc) =>
-          acc.id === id ? { ...acc, lastSynced: 'Just now', status: 'active' } : acc
+          acc.id === id ? { ...acc, lastSynced: 'Just now', lastSyncedAt: res.syncedAt, status: 'active', fileCount: res.fileCount ?? acc.fileCount } : acc
         )
       );
       return res;
     } catch (err) {
       setError(err.message);
+      if (/revoked|expired|reconnect/i.test(err.message)) await fetchAccountsAndUser({ silent: true });
       throw err;
     }
-  }, []);
+  }, [fetchAccountsAndUser]);
 
   const disconnectAccount = useCallback(async (id) => {
     try {
@@ -76,13 +98,9 @@ export function AccountsProvider({ children }) {
 
   const connectAccount = useCallback(async (providerId) => {
     if (providerId === 'google-drive' || providerId === 'google_drive') {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) {
-        throw new Error('You must be signed in to connect a Google Drive account.');
-      }
-      
-      window.location.href = `${API_BASE_URL}/api/auth/google/connect?token=${encodeURIComponent(token)}`;
+      const result = await apiClient.post('/api/auth/google/url');
+      if (!result?.url) throw new Error('The server did not return a Google authorization URL.');
+      window.location.href = result.url;
       return null;
     }
 
@@ -130,20 +148,23 @@ export function AccountsProvider({ children }) {
     return true;
   }, [accounts, user]);
 
+  const accountsReady = Boolean(authUserId && loadedUserId.current === authUserId);
+
   return (
     <AccountsContext.Provider
       value={{
         accounts,
+        authUserId,
+        accountsReady,
         user,
         isAuthenticated: Boolean(authUser),
-        loading,
+        loading: loading || Boolean(authUserId && !accountsReady && !error),
         error,
         syncAccount,
         disconnectAccount,
         connectAccount,
         updateUser,
-        signOut: async () => {},
-        signIn: async () => {},
+        signOut: authSignOut,
         rotateVaultKey,
         exportBackup,
         refetch: fetchAccountsAndUser,

@@ -28,15 +28,15 @@ export default function MoveModal({
     <SlideUpModal
       isOpen={isOpen}
       onClose={onClose}
-      panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-2xl"
+      panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-menu"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-track/30 flex items-center justify-center text-ink shrink-0">
+          <div className="w-9 h-9 rounded-figma bg-track/30 flex items-center justify-center text-ink shrink-0">
             <FolderInput className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-ink">Move {fileCount > 1 ? `${fileCount} Items` : 'Item'}</h3>
+            <h3 className="text-lg font-semibold text-ink">Move {fileCount > 1 ? `${fileCount} Items` : 'Item'}</h3>
             <p className="text-xs text-muted mt-0.5">Select a destination folder</p>
           </div>
         </div>
@@ -56,7 +56,7 @@ export default function MoveModal({
           <button
             type="button"
             onClick={() => setSelectedFolderId('root')}
-            className={`flex items-center justify-between p-3 rounded-xl text-left transition-colors duration-150 ${
+            className={`flex items-center justify-between p-3 rounded-figma text-left transition-colors duration-150 ${
               selectedFolderId === 'root'
                 ? 'bg-ink text-white shadow-sm'
                 : 'bg-white text-ink shadow-sm hover:bg-black/5'
@@ -65,14 +65,14 @@ export default function MoveModal({
             <div className="flex items-center gap-2.5">
               <HardDrive className={`w-4 h-4 ${selectedFolderId === 'root' ? 'text-white' : 'text-muted'}`} />
               <div>
-                <span className="text-xs font-bold block">Root Directory (/)</span>
+                <span className="text-xs font-semibold block">My Drive</span>
                 <span className={`text-[10px] ${selectedFolderId === 'root' ? 'text-white/80' : 'text-muted'}`}>
-                  Move to top-level storage
+                  Move to the top of this account
                 </span>
               </div>
             </div>
             {selectedFolderId === 'root' && (
-              <span className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded-figma">
+              <span className="text-[10px] uppercase font-semibold bg-white/20 px-2 py-0.5 rounded-figma">
                 Selected
               </span>
             )}
@@ -86,7 +86,7 @@ export default function MoveModal({
                 key={folder.id}
                 type="button"
                 onClick={() => setSelectedFolderId(folder.id)}
-                className={`flex items-center justify-between p-3 rounded-xl text-left transition-colors duration-150 ${
+                className={`flex items-center justify-between p-3 rounded-figma text-left transition-colors duration-150 ${
                   isSelected
                     ? 'bg-ink text-white shadow-sm'
                     : 'bg-white text-ink shadow-sm hover:bg-black/5'
@@ -95,14 +95,14 @@ export default function MoveModal({
                 <div className="flex items-center gap-2.5">
                   <Folder className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-muted'}`} />
                   <div>
-                    <span className="text-xs font-bold block uppercase">{folder.name}</span>
+                    <span className="text-xs font-semibold block uppercase">{folder.name}</span>
                     <span className={`text-[10px] ${isSelected ? 'text-white/80' : 'text-muted'}`}>
                       {folder.providerName}
                     </span>
                   </div>
                 </div>
                 {isSelected && (
-                  <span className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded-figma">
+                  <span className="text-[10px] uppercase font-semibold bg-white/20 px-2 py-0.5 rounded-figma">
                     Selected
                   </span>
                 )}

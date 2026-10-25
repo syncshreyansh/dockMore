@@ -15,7 +15,7 @@ import { useAccounts } from '../hooks/useAccounts';
 import { useToast } from '../context/ToastContext';
 
 export default function Accounts() {
-  const { accounts, loading, syncAccount, disconnectAccount, connectAccount, refetchAccounts } = useAccounts();
+  const { accounts, loading, error, syncAccount, disconnectAccount, connectAccount, refetchAccounts } = useAccounts();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -34,7 +34,7 @@ export default function Accounts() {
     const errorParam = searchParams.get('error');
 
     if (connectedId) {
-      showToast('Successfully connected Google Drive account!', 'success');
+      showToast('Google Drive connected', 'success');
       if (typeof refetchAccounts === 'function') {
         refetchAccounts();
       }
@@ -52,6 +52,7 @@ export default function Accounts() {
       showToast(`Synced ${name} successfully`, 'success');
     } catch (err) {
       showToast(`Failed to sync ${name}: ${err.message}`, 'error');
+      throw err;
     } finally {
       setSyncingId(null);
     }
@@ -88,8 +89,20 @@ export default function Accounts() {
     }
   };
 
+  const handleReconnect = async (account) => {
+    setConnectingProviderId(account.id);
+    try {
+      await connectAccount(account.provider);
+    } catch (err) {
+      setConnectingProviderId(null);
+      showToast(`Could not reconnect ${account.name}: ${err.message}`, 'error');
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
+
+      {error && <div role="alert" className="dm-notice">Could not load cloud accounts: {error} <button className="ml-2 underline" onClick={() => refetchAccounts().catch(() => {})}>Retry</button></div>}
       
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted font-medium">
@@ -117,13 +130,15 @@ export default function Accounts() {
             const isExpired = account.status === 'expired';
             const isSyncing = syncingId === account.id;
             const usedPercent = Math.round(
-              (account.usedStorageGB / (account.totalStorageGB || 1)) * 100
+              Number.isFinite(account.usedStorageGB) && Number.isFinite(account.totalStorageGB)
+                ? (account.usedStorageGB / (account.totalStorageGB || 1)) * 100
+                : 0
             );
 
             return (
               <div
                 key={account.id}
-                className="bg-surface rounded-2xl p-6 flex flex-col justify-between hover:bg-white transition-colors duration-150 relative shadow-sm"
+                className="bg-surface rounded-figma p-6 flex flex-col justify-between relative shadow-sm"
               >
                 <div>
                   
@@ -135,21 +150,14 @@ export default function Accounts() {
                     />
 
                     
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-figma bg-track/40 text-xs font-semibold">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          isExpired ? 'bg-amber-500' : 'bg-emerald-500'
-                        }`}
-                      />
-                      <span className="capitalize text-ink">
-                        {isExpired ? 'Auth Expired' : 'Active'}
-                      </span>
-                    </div>
+                    <span role="status" className={`shrink-0 text-right text-xs ${isExpired ? 'font-semibold text-ink' : 'font-medium text-muted'}`}>
+                      {isExpired ? 'Reconnect required' : 'Connected'}
+                    </span>
                   </div>
 
                   
                   <div className="mt-4">
-                    <h3 className="text-base font-bold text-ink truncate leading-tight">
+                    <h3 className="text-base font-semibold text-ink truncate leading-tight">
                       {account.name}
                     </h3>
                     <p className="text-xs text-muted truncate mt-0.5 font-medium">
@@ -161,14 +169,14 @@ export default function Accounts() {
                   <div className="mt-5">
                     <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
                       <span className="text-ink">
-                        {account.usedStorageGB} GB of {account.totalStorageGB} GB
+                        {Number.isFinite(account.usedStorageGB) ? `${account.usedStorageGB} GB` : 'Unavailable'} of {Number.isFinite(account.totalStorageGB) ? `${account.totalStorageGB} GB` : 'Unknown'}
                       </span>
                       <span className="text-muted">{usedPercent}%</span>
                     </div>
 
                     <ProgressBar
-                      value={account.usedStorageGB}
-                      max={account.totalStorageGB}
+                      value={account.usedStorageGB || 0}
+                      max={account.totalStorageGB || 1}
                       height="h-2"
                     />
 
@@ -181,9 +189,22 @@ export default function Accounts() {
 
                 
                 <div className="mt-6 pt-4 border-t border-track/50 flex items-center justify-between gap-2">
-                  <SyncButton
-                    onSync={() => handleSync(account.id, account.name)}
-                  />
+                  {isExpired ? (
+                    <PillButton
+                      variant="solid"
+                      size="xs"
+                      icon={RefreshCw}
+                      onClick={() => handleReconnect(account)}
+                      disabled={connectingProviderId === account.id}
+                    >
+                      {connectingProviderId === account.id ? 'Reconnecting…' : 'Reconnect'}
+                    </PillButton>
+                  ) : (
+                    <SyncButton
+                      onSync={() => handleSync(account.id, account.name)}
+                      isSyncingProp={isSyncing}
+                    />
+                  )}
 
                   <PillButton
                     variant="danger"
@@ -202,16 +223,17 @@ export default function Accounts() {
         
         <button
           type="button"
+          data-dark-hover-exempt
           onClick={() => setShowConnectModal(true)}
-          className="rounded-2xl border-2 border-dashed border-track hover:border-ink/40 bg-transparent hover:bg-surface/50 p-6 flex flex-col items-center justify-center text-center gap-3 transition-colors duration-150 min-h-[260px] group cursor-pointer"
+          className="rounded-figma bg-sidebar p-6 flex flex-col items-center justify-center text-center gap-3 min-h-[260px] shadow-sm cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-full bg-surface group-hover:bg-white flex items-center justify-center text-ink transition-colors duration-150">
+          <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-ink">
             <Plus className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-ink">Connect New Account</h4>
+            <h4 className="text-sm font-semibold text-ink">Connect New Account</h4>
             <p className="text-xs text-muted max-w-[200px] mt-1">
-              Add Google Drive, Microsoft OneDrive, Dropbox, or MEGA.
+              Connect another Google Drive account.
             </p>
           </div>
         </button>

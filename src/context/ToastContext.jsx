@@ -17,7 +17,6 @@ function ToastItem({ t, onDismiss, registerDismiss }) {
     gsap.to(elRef.current, {
       x: 110,
       opacity: 0,
-      filter: 'blur(6px)',
       duration: 0.35,
       ease: 'power3.in',
       onComplete: () => onDismiss(t.id),
@@ -38,12 +37,10 @@ function ToastItem({ t, onDismiss, registerDismiss }) {
       {
         x: 110,
         opacity: 0,
-        filter: 'blur(6px)',
       },
       {
         x: 0,
         opacity: 1,
-        filter: 'blur(0px)',
         duration: 0.45,
         ease: 'power3.out',
       }
@@ -56,23 +53,24 @@ function ToastItem({ t, onDismiss, registerDismiss }) {
   return (
     <div
       ref={elRef}
-      style={{ willChange: 'transform, opacity, filter' }}
-      className="pointer-events-auto bg-ink text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.25)] border border-white/10 flex items-center justify-between gap-3 select-none"
+      style={{ willChange: 'transform, opacity' }}
+      role={isError ? 'alert' : 'status'}
+      className="pointer-events-auto bg-[#E9E9E9] text-[#242424] text-sm font-normal px-4 py-3.5 rounded-figma shadow-menu border-0 flex items-start justify-between gap-3"
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         {isError ? (
-          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <AlertCircle className="w-4 h-4 text-ink shrink-0" aria-label="Error" />
         ) : isSuccess ? (
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-ink shrink-0" aria-label="Success" />
         ) : (
-          <Info className="w-4 h-4 text-white/80 shrink-0" />
+          <Info className="w-4 h-4 text-muted shrink-0" aria-label="Information" />
         )}
-        <span className="truncate leading-tight">{t.message}</span>
+        <span className="min-w-0 break-words leading-relaxed">{t.message}</span>
       </div>
       <button
         type="button"
         onClick={handleDismiss}
-        className="p-1 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+        className="p-1 rounded-lg text-[#555555] hover:text-ink hover:bg-sidebar transition-colors shrink-0"
         aria-label="Close notification"
       >
         <X className="w-3.5 h-3.5" />
@@ -115,7 +113,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast, toast: showToast, dismissToast }}>
       {children}
       
-      <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-[360px] z-[9999] flex flex-col gap-2.5 pointer-events-none">
         {toasts.map((t) => (
           <ToastItem
             key={t.id}

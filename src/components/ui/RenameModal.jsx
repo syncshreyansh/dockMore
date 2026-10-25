@@ -29,14 +29,14 @@ export default function RenameModal({
     <SlideUpModal
       isOpen={isOpen}
       onClose={onClose}
-      panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-2xl"
+      panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-menu"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-track/30 flex items-center justify-center text-ink shrink-0">
+          <div className="w-9 h-9 rounded-figma bg-track/30 flex items-center justify-center text-ink shrink-0">
             <Edit3 className="w-4 h-4" />
           </div>
-          <h3 className="text-lg font-bold text-ink">{title}</h3>
+          <h3 className="text-lg font-semibold text-ink">{title}</h3>
         </div>
         <button
           type="button"
@@ -59,7 +59,7 @@ export default function RenameModal({
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-white shadow-sm text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink/20"
+            className="w-full px-4 py-2.5 rounded-figma bg-white shadow-sm text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink/20"
           />
         </div>
 

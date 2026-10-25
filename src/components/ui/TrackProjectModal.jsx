@@ -2,43 +2,27 @@ import React, { useState } from 'react';
 import { X, FolderGit2, ShieldCheck, Clock } from 'lucide-react';
 import SlideUpModal from './SlideUpModal';
 import PillButton from './PillButton';
-import CustomSelect from './CustomSelect';
-import { useAccounts } from '../../hooks/useAccounts';
 import { useToast } from '../../context/ToastContext';
 
 const INTERVAL_PRESETS = [10, 15, 20, 30];
 
 export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
-  const { accounts } = useAccounts();
   const { showToast } = useToast();
 
   const [projectName, setProjectName] = useState('');
   const [folderPath, setFolderPath] = useState('');
-  const [selectedAccountId, setSelectedAccountId] = useState(
-    accounts[0]?.id || ''
-  );
   const [interval, setInterval] = useState(15);
-
-  const accountOptions = accounts.map((acc) => ({
-    value: acc.id,
-    label: `${acc.name} (${acc.email})`,
-  }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!projectName.trim()) {
-      showToast('Please enter a project name.', 'error');
+      showToast('Enter a project name', 'error');
       return;
     }
-
-    const selectedAccount = accounts.find((a) => a.id === selectedAccountId) || accounts[0];
 
     onTrackProject({
       name: projectName.trim(),
       path: folderPath.trim() || `~/projects/${projectName.trim().toLowerCase().replace(/\s+/g, '-')}`,
-      accountId: selectedAccount?.id || 'acc-1',
-      provider: selectedAccount?.provider || 'google-drive',
-      accountEmail: selectedAccount?.email || 'user@dockmore.dev',
       interval: Number(interval) || 15,
     });
 
@@ -53,14 +37,14 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
     <SlideUpModal
       isOpen={isOpen}
       onClose={onClose}
-      panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-2xl"
+      panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-menu"
     >
       
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-ink">Track New Project</h3>
+          <h3 className="text-lg font-semibold text-ink">Track New Project</h3>
           <p className="text-xs text-muted mt-0.5">
-            Set up fine-grained shadow snapshots with automatic cloud mirroring.
+            Track changes to a project with local snapshots.
           </p>
         </div>
         <button
@@ -85,7 +69,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
             placeholder="e.g. dockmore-cli or mobile-app"
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-white shadow-sm text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink/20"
+            className="w-full px-4 py-2.5 rounded-figma bg-white shadow-sm text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink/20"
           />
         </div>
 
@@ -103,30 +87,17 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
             }
             value={folderPath}
             onChange={(e) => setFolderPath(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-white shadow-sm text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink/20 font-mono text-xs"
+            className="w-full px-4 py-2.5 rounded-figma bg-white shadow-sm text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink/20 font-mono text-xs"
           />
           <span className="text-[11px] text-muted mt-1 block">
-            Where your local repository lives. A hidden shadow git dir will track fine-grained states.
+            The folder containing your project on this computer.
           </span>
         </div>
 
         
-        <div>
-          <label className="block text-xs font-semibold text-ink mb-1.5">
-            Mirror Backup Account
-          </label>
-          {accountOptions.length > 0 ? (
-            <CustomSelect
-              value={selectedAccountId || accountOptions[0]?.value}
-              onChange={(val) => setSelectedAccountId(val)}
-              options={accountOptions}
-            />
-          ) : (
-            <div className="p-3 bg-white rounded-xl text-xs text-muted border border-track/40">
-              No cloud accounts connected. Using default local storage.
-            </div>
-          )}
-        </div>
+        <p className="p-3 bg-white rounded-figma text-xs text-muted border border-track/40">
+          Snapshots stay in the local shadow repository. Start and manage the watcher with the DockMore CLI.
+        </p>
 
         
         <div>
@@ -135,7 +106,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
               <Clock className="w-3.5 h-3.5 text-muted" />
               Snapshot Interval
             </label>
-            <span className="text-xs font-bold text-ink bg-track/40 px-2.5 py-0.5 rounded-figma">
+            <span className="text-xs font-semibold text-ink bg-track/40 px-2.5 py-0.5 rounded-figma">
               Every {interval} minutes
             </span>
           </div>
@@ -146,7 +117,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
                 key={p}
                 type="button"
                 onClick={() => setInterval(p)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-xl border transition-colors ${
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-figma border transition-colors ${
                   interval === p
                     ? 'bg-ink text-white border-ink'
                     : 'bg-white text-ink border-track/60 hover:bg-black/5'
@@ -173,7 +144,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
         </div>
 
         
-        <div className="flex items-center gap-2 text-[11px] text-muted bg-track/30 p-3 rounded-xl mt-1">
+        <div className="flex items-center gap-2 text-[11px] text-muted bg-track/30 p-3 rounded-figma mt-1">
           <ShieldCheck className="w-4 h-4 text-ink shrink-0" />
           <span>
             Snapshots are captured to an isolated shadow git tree (<code className="font-mono text-ink">--git-dir</code>). Your real <code className="font-mono text-ink">git status</code> and GitHub commit history remain 100% clean.

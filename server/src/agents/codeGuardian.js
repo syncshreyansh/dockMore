@@ -3,7 +3,10 @@
 
 const Groq = require('groq-sdk');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+function getGroq() {
+  if (!process.env.GROQ_API_KEY) throw new Error('GROQ_API_KEY is required for AI code review');
+  return new Groq({ apiKey: process.env.GROQ_API_KEY });
+}
 
 const MODEL = 'qwen/qwen3.8-27b';
 const MAX_DIFF_CHARS = 8000;
@@ -24,32 +27,25 @@ The first character of your response must be '[' and the last must be ']'.`;
 
 
 async function codeGuardian(diffText) {
-  const truncated = diffText.length > MAX_DIFF_CHARS
-    ? diffText.slice(0, MAX_DIFF_CHARS) + '\n... [diff truncated]'
-    : diffText;
-
-  const response = await groq.chat.completions.create({
-    model: MODEL,
-    temperature: 0.1,   
-    max_tokens: 512,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user',   content: `Review this diff:\n\n${truncated}` },
-    ],
-  });
-
-  const raw = response.choices[0].message.content.trim();
-
-  
-  try {
+  const warnings = [];
+  for (let start = 0; start < diffText.length; start += MAX_DIFF_CHARS) {
+    const chunk = diffText.slice(start, start + MAX_DIFF_CHARS);
+    const response = await getGroq().chat.completions.create({
+      model: MODEL,
+      temperature: 0.1,
+      max_tokens: 512,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Review this diff chunk (${start}-${start + chunk.length}):\n\n${chunk}` },
+      ],
+    });
+    const raw = response.choices?.[0]?.message?.content?.trim();
+    if (!raw) throw new Error('Code Guardian returned no response');
     const parsed = JSON.parse(raw);
-    const warnings = Array.isArray(parsed) ? parsed.map(String) : [];
-    return { warnings };
-  } catch {
-    
-    console.warn('[codeGuardian] Failed to parse model response as JSON:', raw.slice(0, 200));
-    return { warnings: [] };
+    if (!Array.isArray(parsed)) throw new Error('Code Guardian response was not a warning array');
+    warnings.push(...parsed.map(String));
   }
+  return { warnings };
 }
 
 module.exports = { codeGuardian };

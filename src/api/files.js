@@ -1,121 +1,77 @@
 import { apiClient } from '../lib/apiClient';
 import { getAccounts } from './accounts';
-
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
-
-function detectType(mimeType = '', name = '') {
-  const ext = (name.split('.').pop() || '').toLowerCase();
-  if (['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'bmp'].includes(ext) || mimeType.startsWith('image/')) return 'image';
-  if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext) || mimeType.startsWith('video/')) return 'video';
-  if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext) || mimeType.startsWith('audio/')) return 'audio';
-  if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'md'].includes(ext) || mimeType.includes('pdf') || mimeType.includes('word') || mimeType.includes('text')) return 'document';
-  if (['xls', 'xlsx', 'csv', 'ods'].includes(ext) || mimeType.includes('spreadsheet') || mimeType.includes('excel')) return 'spreadsheet';
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext) || mimeType.includes('zip') || mimeType.includes('compressed')) return 'archive';
-  if (['fig', 'sketch', 'ai', 'psd', 'xd'].includes(ext)) return 'design';
-  return 'document';
-}
-
-function formatDate(isoString) {
-  if (!isoString) return 'Recent';
-  const d = new Date(isoString);
-  const now = new Date();
-  const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) {
-    return `Today, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  }
-  if (diffDays === 1) {
-    return `Yesterday, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  }
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-}
+import { makeFileKey, parseFileKey, mapDriveFile, withFilePaths } from '../lib/fileModel';
+export { makeFileKey, parseFileKey } from '../lib/fileModel';
 
 export async function getFiles(filters = {}) {
-  try {
-    const accounts = await getAccounts();
-    if (!accounts || accounts.length === 0) {
-      return [];
-    }
-
-    
-    const accountFilesPromises = accounts.map(async (acc) => {
-      try {
-        const res = await apiClient.get(`/api/accounts/${acc.id}/files`);
-        const providerFiles = res.files || [];
-
-        return providerFiles.map((f) => {
-          const ext = f.name.split('.').pop() || '';
-          return {
-            id: f.id,
-            name: f.name,
-            type: detectType(f.mimeType, f.name),
-            extension: ext,
-            size: formatBytes(f.size),
-            sizeBytes: f.size || 0,
-            provider: (acc.provider || 'google-drive').replace('_', '-'),
-            accountEmail: acc.email,
-            modified: formatDate(f.modifiedAt),
-            path: '/',
-            folderId: f.isFolder ? f.id : null,
-            isFolder: Boolean(f.isFolder),
-            starred: false,
-            previewUrl: null,
-          };
-        });
-      } catch (err) {
-        console.warn(`[getFiles] Could not fetch files for account ${acc.id}:`, err.message);
-        return [];
-      }
-    });
-
-    const results = await Promise.all(accountFilesPromises);
-    let allFiles = results.flat();
-
-    if (filters.folder) {
-      allFiles = allFiles.filter((f) => f.folderId === filters.folder);
-    }
-    if (filters.provider && filters.provider !== 'all') {
-      allFiles = allFiles.filter((f) => f.provider === filters.provider);
-    }
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      allFiles = allFiles.filter(
-        (f) =>
-          f.name.toLowerCase().includes(q) ||
-          f.accountEmail.toLowerCase().includes(q) ||
-          f.path.toLowerCase().includes(q)
-      );
-    }
-
-    return allFiles;
-  } catch (err) {
-    console.error('[getFiles] Error loading files from backend:', err);
-    return [];
+  const accounts = filters.accounts || await getAccounts();
+  const selected = filters.folder ? parseFileKey(filters.folder) : null;
+  if (filters.folder && !selected) throw new Error('This folder link is invalid. Open the folder again from All Files.');
+  const relevant = accounts.filter((account) => account.status !== 'expired' && (!selected || account.id === selected.accountId));
+  const results = await Promise.allSettled(relevant.map(async (account) => {
+    const folderId = filters.providerFolderId || selected?.providerFileId || '*';
+    const response = await apiClient.get('/api/accounts/' + account.id + '/files?folderId=' + encodeURIComponent(folderId));
+    return response.files.map((file) => mapDriveFile(file, account, filters.folder, folderId));
+  }));
+  let files = withFilePaths(results.flatMap((result) => result.status === 'fulfilled' ? result.value : []));
+  if (filters.provider && filters.provider !== 'all') files = files.filter((file) => file.provider === filters.provider);
+  if (filters.search) {
+    const query = filters.search.toLowerCase();
+    files = files.filter((file) => [file.name, file.accountEmail, file.path].some((value) => value.toLowerCase().includes(query)));
   }
+  files.errors = results.flatMap((result, index) => result.status === 'rejected' ? [relevant[index].name + ': ' + result.reason.message] : []);
+  return files;
 }
 
-export async function getRecentFolders() {
-  try {
-    const files = await getFiles();
+export async function uploadFile(accountId, file, folderId) {
+  const query = new URLSearchParams({ name: file.name, ...(folderId ? { folderId } : {}) });
+  return apiClient.post(`/api/accounts/${accountId}/files?${query}`, file, {
+    headers: { 'Content-Type': 'application/octet-stream' },
+  });
+}
+
+export async function downloadFile(file) {
+  const blob = await apiClient.download(`/api/accounts/${file.accountId}/files/${encodeURIComponent(file.targetId || file.providerFileId || file.id)}/content?name=${encodeURIComponent(file.name)}`);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = file.name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function updateCloudFile(file, updates) {
+  return apiClient.patch(`/api/accounts/${file.accountId}/files/${encodeURIComponent(file.providerFileId || file.id)}`, updates);
+}
+
+export async function deleteCloudFile(file) {
+  return apiClient.delete(`/api/accounts/${file.accountId}/files/${encodeURIComponent(file.providerFileId || file.id)}`);
+}
+
+export async function createCloudFolder(accountId, name, parentId) {
+  return apiClient.post(`/api/accounts/${accountId}/folders`, { name, parentId });
+}
+
+export async function createShareLink(file) {
+  return apiClient.post(`/api/accounts/${file.accountId}/files/${encodeURIComponent(file.providerFileId || file.id)}/share`);
+}
+
+export async function getRecentFolders(existingFiles) {
+    const files = existingFiles || await getFiles();
     return files
       .filter((f) => f.isFolder)
       .map((folder, index) => ({
         id: folder.id,
+        providerFileId: folder.providerFileId || folder.id.split('::').slice(1).join('::'),
+        accountId: folder.accountId || folder.id.split('::')[0],
         name: folder.name,
         provider: folder.provider,
         providerName: folder.provider === 'google-drive' ? 'Google Drive' : folder.provider,
         accountEmail: folder.accountEmail,
         accent: index === 0,
       }));
-  } catch (err) {
-    console.error('[getRecentFolders] Error:', err);
-    return [];
-  }
 }
 
 export async function getDashboardStats() {
@@ -134,15 +90,15 @@ export async function getDashboardStats() {
     };
 
     accounts.forEach((acc) => {
-      totalCapacityGB += acc.totalStorageGB || 15;
-      totalUsedGB += acc.usedStorageGB || 0;
+      if (Number.isFinite(acc.totalStorageGB)) totalCapacityGB += acc.totalStorageGB;
+      if (Number.isFinite(acc.usedStorageGB)) totalUsedGB += acc.usedStorageGB;
       const provKey = acc.provider;
       if (providerMap[provKey]) {
-        providerMap[provKey].used += acc.usedStorageGB || 0;
+        providerMap[provKey].used += Number.isFinite(acc.usedStorageGB) ? acc.usedStorageGB : 0;
         providerMap[provKey].accounts.push({
           name: acc.name,
           email: acc.email,
-          used: `${acc.usedStorageGB} GB`,
+          used: Number.isFinite(acc.usedStorageGB) ? `${acc.usedStorageGB} GB` : 'Unavailable',
         });
       }
     });
@@ -158,8 +114,8 @@ export async function getDashboardStats() {
       .filter((p) => p.accounts.length > 0);
 
     return {
-      totalUsedGB: Number(totalUsedGB.toFixed(1)),
-      totalCapacityGB: totalCapacityGB,
+      totalUsedGB: accounts.some((acc) => !Number.isFinite(acc.usedStorageGB)) ? null : Number(totalUsedGB.toFixed(1)),
+      totalCapacityGB: accounts.some((acc) => !Number.isFinite(acc.totalStorageGB)) ? null : totalCapacityGB,
       connectedAccountsCount: accounts.length,
       totalFilesCount: files.length,
       totalTransfersCount: 0,
@@ -167,13 +123,6 @@ export async function getDashboardStats() {
     };
   } catch (err) {
     console.error('[getDashboardStats] Error:', err);
-    return {
-      totalUsedGB: 0,
-      totalCapacityGB: 0,
-      connectedAccountsCount: 0,
-      totalFilesCount: 0,
-      totalTransfersCount: 0,
-      storageByProvider: [],
-    };
+    throw err;
   }
 }

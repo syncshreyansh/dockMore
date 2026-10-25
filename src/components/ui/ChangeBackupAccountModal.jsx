@@ -54,16 +54,16 @@ export default function ChangeBackupAccountModal({
     <SlideUpModal
       isOpen={isOpen}
       onClose={onClose}
-      panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-2xl"
+      panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-lg w-full flex flex-col gap-5 relative shadow-menu"
     >
       
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-figma bg-black/5 flex items-center justify-center shrink-0">
             <Cloud className="w-5 h-5 text-ink" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-ink">Change Backup Account</h3>
+            <h3 className="text-lg font-semibold text-ink">Change Backup Account</h3>
             <p className="text-xs text-muted mt-0.5">
               Select which connected cloud account stores snapshots for{' '}
               <span className="font-semibold text-ink">{project.name}</span>.
@@ -93,19 +93,19 @@ export default function ChangeBackupAccountModal({
                 key={acc.id}
                 type="button"
                 onClick={() => setSelectedAccountId(acc.id)}
-                className={`w-full p-3.5 rounded-2xl text-left flex items-center justify-between transition-all duration-150 cursor-pointer ${
+                className={`w-full p-3.5 rounded-figma text-left flex items-center justify-between transition-all duration-150 cursor-pointer ${
                   isSelected
-                    ? 'bg-white shadow-md ring-2 ring-ink'
+                    ? 'bg-white shadow-panel ring-2 ring-ink'
                     : 'bg-white/60 hover:bg-white shadow-xs border border-transparent hover:border-black/5'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-background flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-figma bg-background flex items-center justify-center shrink-0">
                     <ProviderIcon provider={acc.provider} size="sm" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-ink truncate">
+                      <span className="text-sm font-semibold text-ink truncate">
                         {acc.name}
                       </span>
                       {isCurrent && (

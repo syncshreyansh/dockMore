@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseConfigured } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUp = useCallback(async (email, password, name) => {
+    if (!supabaseConfigured) throw new Error('Supabase Auth is not configured for this deployment.');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -50,6 +51,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signIn = useCallback(async (email, password) => {
+    if (!supabaseConfigured) throw new Error('Supabase Auth is not configured for this deployment.');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -58,11 +60,12 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (redirectTo = `${window.location.origin}/`) => {
+    if (!supabaseConfigured) throw new Error('Supabase Auth is not configured for this deployment.');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo,
       },
     });
     if (error) throw error;

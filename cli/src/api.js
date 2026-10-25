@@ -15,6 +15,7 @@ export async function request(endpoint, options = {}) {
   const response = await fetch(url, {
     ...options,
     headers,
+    signal: options.signal || AbortSignal.timeout(15000),
   });
 
   if (!response.ok) {
@@ -34,8 +35,10 @@ export async function request(endpoint, options = {}) {
     throw error;
   }
 
-  if (response.status === 204) return null;
-  return response.json();
+  if (response.status === 204 || response.status === 205) return null;
+  if (!response.headers.get('content-type')?.includes('application/json')) return null;
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export const api = {
@@ -50,4 +53,5 @@ export const api = {
       method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
     }),
+  delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
 };

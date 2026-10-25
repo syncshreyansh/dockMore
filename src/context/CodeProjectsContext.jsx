@@ -7,10 +7,12 @@ import {
   toggleWatchStatus,
 } from '../api/codeProjects';
 import { apiClient } from '../lib/apiClient';
+import { useAuth } from './AuthContext';
 
 const CodeProjectsContext = createContext(null);
 
 export function CodeProjectsProvider({ children }) {
+  const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState([]);
   const [snapshots, setSnapshots] = useState({});
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,6 @@ export function CodeProjectsProvider({ children }) {
 
   const refetch = useCallback(async () => {
     try {
-      setLoading(true);
       const data = await getCodeProjects();
       setProjects(data);
       setError(null);
@@ -30,8 +31,10 @@ export function CodeProjectsProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refetch();
-  }, [refetch]);
+    if (authLoading) return;
+    if (!user) { setProjects([]); setSnapshots({}); setLoading(false); return; }
+    refetch().catch(() => {});
+  }, [authLoading, user, refetch]);
 
   const addProject = useCallback(async (projectData) => {
     try {
@@ -70,6 +73,7 @@ export function CodeProjectsProvider({ children }) {
       await refetch();
     } catch (err) {
       setError(err.message);
+      throw err;
     }
   }, [refetch]);
 
@@ -81,24 +85,18 @@ export function CodeProjectsProvider({ children }) {
       await refetch();
     } catch (err) {
       setError(err.message);
+      throw err;
     }
   }, [refetch]);
 
+  const refreshSnapshots = useCallback(async (projectId) => {
+    const data = await getProjectSnapshots(projectId);
+    setSnapshots((prev) => ({ ...prev, [projectId]: data }));
+    return data;
+  }, []);
+
   const getSnapshots = useCallback(
-    (projectId) => {
-      
-      
-      
-      
-      if (!snapshots[projectId]) {
-        
-        getProjectSnapshots(projectId).then(snaps => {
-          setSnapshots(prev => ({ ...prev, [projectId]: snaps }));
-        }).catch(console.error);
-        return [];
-      }
-      return snapshots[projectId];
-    },
+    (projectId) => snapshots[projectId] || [],
     [snapshots]
   );
 
@@ -115,6 +113,7 @@ export function CodeProjectsProvider({ children }) {
         toggleWatch,
         updateProjectBackupAccount,
         getSnapshots,
+        refreshSnapshots,
         refetch,
       }}
     >

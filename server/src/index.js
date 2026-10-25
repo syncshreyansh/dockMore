@@ -13,6 +13,8 @@ const googleAuthRouter    = require('./routes/auth.google');
 const accountsRouter      = require('./routes/accounts');
 const codeProjectsRouter  = require('./routes/codeProjects');
 const cliRouter           = require('./routes/cli');
+const transfersRouter     = require('./routes/transfers');
+const mediaRouter         = require('./routes/media');
 
 
 const app = express();
@@ -28,7 +30,11 @@ app.use(
 );
 
 
-app.use(express.json());
+app.use('/api/accounts/:accountId/files', (req, res, next) => {
+  if (req.method !== 'POST' || req.is('application/json')) return next();
+  return express.raw({ type: '*/*', limit: '100mb' })(req, res, next);
+});
+app.use(express.json({ limit: '1mb' }));
 
 
 app.use('/api/health',        healthRouter);
@@ -36,6 +42,8 @@ app.use('/api/auth/google',   googleAuthRouter);
 app.use('/api/accounts',      accountsRouter);     
 app.use('/api/code-projects', codeProjectsRouter); 
 app.use('/api/cli',           cliRouter);            
+app.use('/api/transfers',     transfersRouter);
+app.use('/api/media',         mediaRouter);
 
 
 app.use((_req, res) => {
@@ -55,7 +63,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`[dockmore-server] Running on http://localhost:${PORT}`);
   console.log(`[dockmore-server] Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`[dockmore-server] Routes: /api/health | /api/auth/google | /api/accounts`);
+  console.log(`[dockmore-server] Routes: /api/health | /api/auth/google | /api/accounts | /api/code-projects | /api/cli | /api/transfers`);
 });
 
 module.exports = app;

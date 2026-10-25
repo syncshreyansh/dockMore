@@ -27,6 +27,7 @@ import MoveModal from './MoveModal';
 import ConfirmModal from './ConfirmModal';
 import { useToast } from '../../context/ToastContext';
 import { useFiles } from '../../hooks/useFiles';
+import useMediaSource from '../../hooks/useMediaSource';
 
 const getFileIcon = (extension) => {
   const ext = (extension || '').toLowerCase().replace('.', '');
@@ -78,7 +79,7 @@ const getFileIcon = (extension) => {
 
 export default function FilePreviewModal({ isOpen, file, onClose }) {
   const { showToast } = useToast();
-  const { deleteFile, renameFile, moveFile, toggleStar } = useFiles();
+  const { deleteFile, renameFile, moveFile, toggleStar, downloadFile } = useFiles();
 
   const [showShare, setShowShare] = useState(false);
   const [showRename, setShowRename] = useState(false);
@@ -86,6 +87,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+
 
   const lastFileRef = useRef(file);
   if (file) {
@@ -98,69 +100,41 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
     setImageLoaded(false);
   }, [currentFile?.id]);
 
-  
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        if (isLightboxOpen) {
-          setIsLightboxOpen(false);
-        }
-      }
-    };
-    if (isLightboxOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLightboxOpen]);
+  const { url: mediaUrl, loading: mediaLoading, error: mediaError, retry: retryMedia } = useMediaSource(currentFile, 'content', isOpen && (['image', 'video', 'audio'].includes(currentFile?.type) || currentFile?.extension === 'pdf'));
 
   if (!currentFile) return null;
 
   const FileTypeIcon = getFileIcon(currentFile.extension);
   const cleanExt = (currentFile.extension || '').toLowerCase().replace('.', '');
   const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(cleanExt);
-  const isVideo = ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(cleanExt);
-  const isAudio = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(cleanExt);
+  const isVideo = currentFile.type === 'video';
+  const isAudio = currentFile.type === 'audio';
   const isPdf = cleanExt === 'pdf';
 
   
-  const mediaUrl =
-    currentFile.previewUrl ||
-    (isImage ? `https://picsum.photos/seed/${currentFile.id || currentFile.name}/1200/800` : null);
-
-  const handleDownload = () => {
-    if (mediaUrl) {
-      const a = document.createElement('a');
-      a.href = mediaUrl;
-      a.download = currentFile.name;
-      a.target = '_blank';
-      a.rel = 'noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-    showToast(`Downloading ${currentFile.name}...`, 'success');
+  const handleDownload = async () => {
+    try { await downloadFile(currentFile); showToast(`Downloaded ${currentFile.name}`, 'success'); }
+    catch (err) { showToast(err.message, 'error'); }
   };
 
-  const handleToggleStar = () => {
-    toggleStar(currentFile.id);
-    showToast(currentFile.starred ? 'Removed from Starred' : 'Added to Starred', 'info');
+  const handleToggleStar = async () => {
+    try { await toggleStar(currentFile.id); showToast(currentFile.starred ? 'Removed from Starred' : 'Added to Starred', 'info'); }
+    catch (err) { showToast(err.message, 'error'); }
   };
 
-  const handleRename = (newName) => {
-    renameFile(currentFile.id, newName);
-    showToast(`Renamed file to "${newName}"`, 'success');
+  const handleRename = async (newName) => {
+    try { await renameFile(currentFile.id, newName); showToast(`Renamed file to "${newName}"`, 'success'); }
+    catch (err) { showToast(err.message, 'error'); }
   };
 
-  const handleMove = (newFolderId, newPath) => {
-    moveFile(currentFile.id, newFolderId, newPath);
-    showToast(`Moved ${currentFile.name} to ${newPath}`, 'success');
+  const handleMove = async (newFolderId, newPath) => {
+    try { await moveFile(currentFile.id, newFolderId, newPath); showToast(`Moved ${currentFile.name} to ${newPath}`, 'success'); }
+    catch (err) { showToast(err.message, 'error'); }
   };
 
-  const handleDelete = () => {
-    deleteFile(currentFile.id);
-    setShowDeleteConfirm(false);
-    onClose();
-    showToast(`Deleted ${currentFile.name}`, 'info');
+  const handleDelete = async () => {
+    try { await deleteFile(currentFile.id); setShowDeleteConfirm(false); onClose(); showToast(`Deleted ${currentFile.name}`, 'info'); }
+    catch (err) { showToast(err.message, 'error'); }
   };
 
   return (
@@ -168,23 +142,23 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
       <SlideUpModal
         isOpen={isOpen}
         onClose={onClose}
-        panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-2xl w-full flex flex-col gap-5 relative shadow-2xl max-h-[92vh] overflow-y-auto"
+        panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-2xl w-full flex flex-col gap-5 relative shadow-menu max-h-[92vh] overflow-y-auto"
       >
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-wider font-bold text-muted font-sans">
+            <span className="text-xs uppercase tracking-wider font-semibold text-muted font-sans">
               File Preview
             </span>
             <button
               type="button"
               onClick={handleToggleStar}
-              className="p-1 rounded-full text-muted hover:text-amber-500 transition-colors"
+              className="p-1 rounded-full text-muted hover:text-ink transition-colors"
               title={currentFile.starred ? 'Unstar' : 'Star'}
             >
               <Star
                 className={`w-4 h-4 ${
-                  currentFile.starred ? 'fill-amber-400 text-amber-400' : ''
+                  currentFile.starred ? 'fill-ink text-ink' : ''
                 }`}
               />
             </button>
@@ -201,16 +175,16 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
         </div>
 
         
-        <div className="bg-white rounded-2xl border border-track/40 shadow-sm overflow-hidden flex flex-col items-center justify-center min-h-[260px] max-h-[420px] w-full relative group/preview">
+        <div className="bg-white rounded-figma border border-track/40 shadow-sm overflow-hidden flex flex-col items-center justify-center min-h-[260px] max-h-[420px] w-full relative group/preview">
           
           {isImage && mediaUrl && (
             <div
-              className="w-full h-full min-h-[260px] max-h-[400px] flex items-center justify-center relative cursor-zoom-in overflow-hidden bg-[#F5F4F2]"
+              className="w-full h-full min-h-[260px] max-h-[400px] flex items-center justify-center relative cursor-zoom-in overflow-hidden bg-sidebar"
               onClick={() => setIsLightboxOpen(true)}
               title="Click to view fullscreen"
             >
               {!imageLoaded && (
-                <div className="absolute inset-0 bg-gradient-to-r from-track/20 via-surface to-track/20 animate-pulse flex items-center justify-center">
+                <div className="absolute inset-0 bg-surface animate-pulse flex items-center justify-center">
                   <ImageIcon className="w-10 h-10 text-muted/40 animate-pulse" />
                 </div>
               )}
@@ -218,13 +192,13 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
                 src={mediaUrl}
                 alt={currentFile.name}
                 onLoad={() => setImageLoaded(true)}
-                className={`w-full max-h-[400px] object-contain transition-all duration-300 ${
+                className={`w-full max-h-[400px] object-contain transition-[opacity,transform] duration-300 ${
                   imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                 }`}
               />
 
               
-              <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-medium flex items-center gap-1.5 opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200 pointer-events-none shadow-md">
+              <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-medium flex items-center gap-1.5 opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200 pointer-events-none shadow-panel">
                 <Maximize2 className="w-3 h-3" />
                 Click to expand
               </div>
@@ -233,13 +207,13 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
 
           
           {isVideo && mediaUrl && (
-            <div className="w-full bg-[#1a1a1a] rounded-2xl overflow-hidden flex items-center justify-center">
+            <div className="w-full bg-[#1a1a1a] rounded-figma overflow-hidden flex items-center justify-center">
               <video
                 src={mediaUrl}
                 controls
                 playsInline
                 preload="metadata"
-                className="w-full max-h-[400px] object-contain rounded-2xl"
+                className="w-full max-h-[400px] object-contain rounded-figma"
               >
                 Your browser does not support HTML5 video playback.
               </video>
@@ -248,15 +222,15 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
 
           
           {isAudio && mediaUrl && (
-            <div className="w-full p-8 flex flex-col items-center justify-center bg-gradient-to-b from-surface/70 via-white to-white rounded-2xl gap-5">
+            <div className="w-full p-8 flex flex-col items-center justify-center bg-surface rounded-figma gap-5">
               
-              <div className="w-20 h-20 rounded-3xl bg-track/40 flex items-center justify-center text-ink shadow-xs">
+              <div className="w-20 h-20 rounded-figma bg-track/40 flex items-center justify-center text-ink shadow-xs">
                 <Music className="w-10 h-10 stroke-[1.8]" />
               </div>
 
               
               <div className="text-center max-w-md">
-                <h4 className="text-base font-bold text-ink truncate px-4">{currentFile.name}</h4>
+                <h4 className="text-base font-semibold text-ink truncate px-4">{currentFile.name}</h4>
                 <p className="text-xs text-muted mt-1">{currentFile.size} • High Fidelity Audio</p>
               </div>
 
@@ -279,7 +253,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
               <audio
                 src={mediaUrl}
                 controls
-                className="w-full max-w-md h-10 rounded-xl"
+                className="w-full max-w-md h-10 rounded-figma"
               >
                 Your browser does not support audio playback.
               </audio>
@@ -288,11 +262,11 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
 
           
           {isPdf && mediaUrl && (
-            <div className="w-full h-[380px] rounded-2xl overflow-hidden">
+            <div className="w-full h-[380px] rounded-figma overflow-hidden">
               <iframe
                 src={mediaUrl}
                 title={currentFile.name}
-                className="w-full h-full border-none rounded-2xl"
+                className="w-full h-full border-none rounded-figma"
               />
             </div>
           )}
@@ -300,16 +274,16 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
           
           {(!mediaUrl || (!isImage && !isVideo && !isAudio && !isPdf)) && (
             <div className="w-full p-10 flex flex-col items-center justify-center gap-3 text-center">
-              <div className="w-20 h-20 rounded-3xl bg-track/40 flex items-center justify-center text-ink/70 shadow-xs mb-1">
+              <div className="w-20 h-20 rounded-figma bg-track/40 flex items-center justify-center text-ink/70 shadow-xs mb-1">
                 <FileTypeIcon className="w-10 h-10 stroke-[1.5]" />
               </div>
-              <h4 className="text-base font-bold text-ink truncate max-w-sm px-2">
+              <h4 className="text-base font-semibold text-ink truncate max-w-sm px-2">
                 {currentFile.name}
               </h4>
               <p className="text-xs text-muted max-w-xs leading-relaxed">
-                Preview not available for this file type ({(cleanExt || 'file').toUpperCase()}).
-                Download the file to view it locally on your device.
+                {mediaLoading ? 'Loading preview...' : mediaError || `Preview is unavailable for this file type (${(cleanExt || 'file').toUpperCase()}). Download it to view on your device.`}
               </p>
+              {mediaError && <button type="button" onClick={retryMedia} className="text-xs font-medium underline">Try again</button>}
               <div className="mt-2">
                 <PillButton
                   variant="solid"
@@ -325,13 +299,13 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
         </div>
 
         
-        <div className="bg-white rounded-2xl px-4 py-3 border border-track/40 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="bg-white rounded-figma px-4 py-3 border border-track/40 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
           
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-bold text-ink truncate max-w-[200px] sm:max-w-[280px]">
+            <span className="font-semibold text-ink truncate max-w-[200px] sm:max-w-[280px]">
               {currentFile.name}
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-track/50 text-[10px] font-extrabold uppercase text-ink/80 tracking-wider">
+            <span className="px-2 py-0.5 rounded-md bg-track/50 text-[10px] font-semibold uppercase text-ink/80 tracking-wider">
               {cleanExt || 'FILE'}
             </span>
           </div>
@@ -406,7 +380,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
       
       {isLightboxOpen && isImage && mediaUrl && (
         <div
-          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-fadeIn select-none"
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 sm:p-8 animate-fadeIn select-none"
           onClick={() => setIsLightboxOpen(false)}
         >
           
@@ -442,7 +416,7 @@ export default function FilePreviewModal({ isOpen, file, onClose }) {
           <img
             src={mediaUrl}
             alt={currentFile.name}
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl transition-transform duration-200"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-menu transition-transform duration-200"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

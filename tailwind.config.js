@@ -7,12 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#E8E7E5',
+        background: '#E9E9E9',
         sidebar: '#E9E9E9',
-        surface: '#FAFAF9',
+        surface: '#E9E9E9',
         ink: '#303030',
-        muted: '#8A8785',
-        track: '#D9D8D6',
+        muted: '#8C8C8C',
+        track: '#D1D1D1',
         progress: '#303030',
       },
       fontFamily: {
@@ -23,6 +23,10 @@ export default {
         'figma': '14px',
         '2xl': '16px',
         '3xl': '20px',
+      },
+      boxShadow: {
+        menu: '0 4px 16px rgba(48, 48, 48, 0.10)',
+        panel: '0 1px 3px rgba(48, 48, 48, 0.05)',
       },
       animation: {
         'fade-in': 'fadeIn 0.8s ease-out forwards',

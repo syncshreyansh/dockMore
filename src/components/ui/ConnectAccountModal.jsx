@@ -4,10 +4,10 @@ import SlideUpModal from './SlideUpModal';
 import ProviderIcon from './ProviderIcon';
 
 const PROVIDERS = [
-  { name: 'Google Drive', id: 'google-drive', desc: 'Personal & Google Workspace' },
-  { name: 'Microsoft OneDrive', id: 'onedrive', desc: 'Personal & Microsoft 365' },
-  { name: 'Dropbox', id: 'dropbox', desc: 'Dropbox Personal & Business' },
-  { name: 'MEGA', id: 'mega', desc: 'Encrypted Cloud Storage' },
+  { name: 'Google Drive', id: 'google-drive', desc: 'Personal & Google Workspace', supported: true },
+  { name: 'Microsoft OneDrive', id: 'onedrive', desc: 'Not available yet', supported: false },
+  { name: 'Dropbox', id: 'dropbox', desc: 'Not available yet', supported: false },
+  { name: 'MEGA', id: 'mega', desc: 'Not available yet', supported: false },
 ];
 
 export default function ConnectAccountModal({
@@ -20,15 +20,15 @@ export default function ConnectAccountModal({
     <SlideUpModal
       isOpen={isOpen}
       onClose={onClose}
-      panelClassName="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-2xl"
+      panelClassName="bg-surface rounded-figma p-6 sm:p-8 max-w-md w-full flex flex-col gap-5 relative shadow-menu"
       closeOnBackdrop={!connectingProviderId}
     >
       
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-ink">Connect Cloud Account</h3>
+          <h3 className="text-lg font-semibold text-ink">Connect Cloud Account</h3>
           <p className="text-xs text-muted mt-0.5">
-            Select a provider to authenticate with OAuth 2.0.
+            Choose the account you want to connect.
           </p>
         </div>
         <button
@@ -50,9 +50,9 @@ export default function ConnectAccountModal({
             <button
               key={prov.id}
               type="button"
-              disabled={Boolean(connectingProviderId)}
+              disabled={Boolean(connectingProviderId) || !prov.supported}
               onClick={() => onProviderSelect(prov)}
-              className={`flex items-center justify-between p-3.5 rounded-xl text-left transition-colors duration-150 ${
+              className={`flex items-center justify-between p-3.5 rounded-figma text-left transition-colors duration-150 ${
                 isConnecting
                   ? 'bg-ink text-white shadow-sm'
                   : 'bg-white hover:bg-black/5 shadow-sm'
@@ -61,11 +61,11 @@ export default function ConnectAccountModal({
               <div className="flex items-center gap-3">
                 <ProviderIcon provider={prov.id} size="md" />
                 <div>
-                  <p className={`text-sm font-bold ${isConnecting ? 'text-white' : 'text-ink'}`}>
+                  <p className={`text-sm font-semibold ${isConnecting ? 'text-white' : 'text-ink'}`}>
                     {prov.name}
                   </p>
                   <p className={`text-xs ${isConnecting ? 'text-white/80' : 'text-muted'}`}>
-                    {isConnecting ? 'Authenticating via OAuth 2.0...' : prov.desc}
+                    {isConnecting ? 'Connecting...' : prov.desc}
                   </p>
                 </div>
               </div>
@@ -80,10 +80,10 @@ export default function ConnectAccountModal({
       </div>
 
       
-      <div className="flex items-center gap-2 text-[11px] text-muted bg-track/30 p-3 rounded-xl">
+      <div className="flex items-center gap-2 text-[11px] text-muted bg-track/30 p-3 rounded-figma">
         <ShieldCheck className="w-4 h-4 text-ink shrink-0" />
         <span>
-          dockMore operates in read/write proxy mode. Your credentials never touch our servers directly.
+          Sign in securely with Google. Your connected account tokens are encrypted.
         </span>
       </div>
     </SlideUpModal>

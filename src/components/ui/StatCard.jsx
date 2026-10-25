@@ -23,14 +23,14 @@ export default function StatCard({
 
   return (
     <div
-      className={`${bgClass} rounded-figma p-6 flex flex-col justify-between transition-colors duration-150 ${className}`}
+      className={`${bgClass} rounded-figma p-5 flex flex-col justify-between transition-colors duration-150 ${className}`}
     >
       <div>
         {hasHeader && (
           <div className="flex items-start justify-between gap-2 mb-4">
             <div>
               {title && (
-                <h4 className="text-xs uppercase font-bold tracking-wider text-muted font-sans">
+                <h4 className="text-xs uppercase font-semibold tracking-wider text-muted font-sans">
                   {title}
                 </h4>
               )}
@@ -53,7 +53,7 @@ export default function StatCard({
           <div className="flex items-start justify-between gap-2">
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
-                <div className="font-sans font-semibold text-2xl md:text-3xl text-ink tracking-tight">
+                <div className="font-sans font-semibold text-2xl xl:text-[28px] leading-tight text-ink tracking-tight">
                   {value}
                 </div>
                 {valueBadge && <div>{valueBadge}</div>}

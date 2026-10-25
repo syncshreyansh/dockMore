@@ -40,7 +40,8 @@ export default function SignIn() {
     try {
       setGoogleLoading(true);
       setError(null);
-      await signInWithGoogle();
+      const returnPath = `${from}${location.state?.from?.search || ''}${location.state?.from?.hash || ''}`;
+      await signInWithGoogle(new URL(returnPath, window.location.origin).toString());
     } catch (err) {
       setError(err.message || 'Google sign-in failed');
       setGoogleLoading(false);
@@ -48,19 +49,19 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E8E7E5] flex items-center justify-center p-4 font-sans select-none">
-      <div className="w-full max-w-[420px] bg-[#FAFAF9] rounded-[20px] p-7 sm:p-8 border border-[#D9D8D6]/70 flex flex-col gap-6">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans select-none">
+      <div className="w-full max-w-[420px] bg-[#E9E9E9] rounded-figma p-7 sm:p-8 border border-[#D1D1D1]/70 flex flex-col gap-6">
         
         <div className="flex flex-col items-center text-center gap-2 pt-1">
           <Logo to="/signin" />
-          <p className="text-xs text-[#8A8785] font-medium mt-1">
-            Access your unified multi-cloud workspace
+          <p className="text-xs text-[#8C8C8C] font-medium mt-1">
+            Sign in to your cloud workspace.
           </p>
         </div>
 
         
         {error && (
-          <div className="bg-red-50/80 border border-red-200 rounded-[12px] p-3 text-xs text-red-600 leading-tight">
+          <div role="alert" className="dm-notice">
             {error}
           </div>
         )}
@@ -68,7 +69,7 @@ export default function SignIn() {
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5 text-left">
-            <label className="text-xs font-semibold text-[#1A1A1A]" htmlFor="signin-email">
+            <label className="text-xs font-semibold text-[#303030]" htmlFor="signin-email">
               Email
             </label>
             <input
@@ -79,13 +80,13 @@ export default function SignIn() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="w-full rounded-[12px] border border-[#D9D8D6] bg-white px-4 py-2.5 text-sm text-[#1A1A1A] placeholder:text-[#8A8785] outline-none focus:border-[#1A1A1A] transition-colors"
+              className="w-full rounded-figma border-0 bg-white px-4 py-2.5 text-sm text-[#303030] placeholder:text-[#8C8C8C]"
             />
           </div>
 
           <div className="flex flex-col gap-1.5 text-left">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-[#1A1A1A]" htmlFor="signin-password">
+              <label className="text-xs font-semibold text-[#303030]" htmlFor="signin-password">
                 Password
               </label>
             </div>
@@ -97,7 +98,7 @@ export default function SignIn() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full rounded-[12px] border border-[#D9D8D6] bg-white px-4 py-2.5 text-sm text-[#1A1A1A] placeholder:text-[#8A8785] outline-none focus:border-[#1A1A1A] transition-colors"
+              className="w-full rounded-figma border-0 bg-white px-4 py-2.5 text-sm text-[#303030] placeholder:text-[#8C8C8C]"
             />
           </div>
 
@@ -105,7 +106,7 @@ export default function SignIn() {
           <button
             type="submit"
             disabled={loading || googleLoading}
-            className="w-full mt-2 py-3 rounded-full bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 active:bg-black text-white font-semibold text-sm transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="w-full mt-2 py-3 rounded-figma bg-[#303030] hover:bg-[#303030]/90 active:bg-black text-white font-semibold text-sm transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
           </button>
@@ -114,9 +115,9 @@ export default function SignIn() {
         
         <div className="relative flex items-center justify-center my-0.5">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[#D9D8D6]" />
+            <div className="w-full border-t border-[#D1D1D1]" />
           </div>
-          <span className="relative bg-[#FAFAF9] px-3 text-[11px] font-medium uppercase tracking-wider text-[#8A8785]">
+          <span className="relative bg-[#E9E9E9] px-3 text-[11px] font-medium uppercase tracking-wider text-[#8C8C8C]">
             or
           </span>
         </div>
@@ -126,10 +127,10 @@ export default function SignIn() {
           type="button"
           disabled={loading || googleLoading}
           onClick={handleGoogleSignIn}
-          className="w-full py-2.5 rounded-full border border-[#D9D8D6] bg-transparent text-[#1A1A1A] hover:bg-black/5 active:bg-black/10 flex items-center justify-center gap-2.5 font-semibold text-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full py-2.5 rounded-figma border border-[#D1D1D1] bg-transparent text-[#303030] hover:bg-black/5 active:bg-black/10 flex items-center justify-center gap-2.5 font-semibold text-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {googleLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin text-[#1A1A1A]" />
+            <Loader2 className="w-4 h-4 animate-spin text-[#303030]" />
           ) : (
             <>
               <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -156,11 +157,11 @@ export default function SignIn() {
         </button>
 
         
-        <p className="text-center text-xs text-[#8A8785]">
+        <p className="text-center text-xs text-[#8C8C8C]">
           Don't have an account?{' '}
           <Link
             to="/signup"
-            className="font-semibold text-[#1A1A1A] hover:underline"
+            className="font-semibold text-[#303030] hover:underline"
           >
             Create an account
           </Link>

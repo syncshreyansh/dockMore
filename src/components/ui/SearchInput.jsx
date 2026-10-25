@@ -39,7 +39,8 @@ export default function SearchInput({
         onKeyDown={onKeyDown}
         onFocus={onFocus}
         placeholder={placeholder}
-        className={`w-full rounded-figma bg-white border border-track/60 hover:border-track focus:border-ink/20 text-ink placeholder:text-muted focus:outline-none transition-colors duration-150 ${
+        aria-label="Search files and folders"
+        className={`w-full rounded-figma bg-[#D8D8D8] border-0 text-ink placeholder:text-muted transition-colors duration-150 ${
           sizeClasses[size] || sizeClasses.md
         } ${inputClassName}`}
       />
@@ -47,6 +48,7 @@ export default function SearchInput({
         <button
           type="button"
           onClick={onClear}
+          aria-label="Clear search"
           className="absolute right-3 p-1 rounded-full text-muted hover:text-ink hover:bg-black/5 transition-colors duration-150"
         >
           <X className="w-3.5 h-3.5" />

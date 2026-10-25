@@ -14,6 +14,7 @@ export default function CliAuth() {
 
   const [status, setStatus] = useState('loading'); 
   const [error, setError] = useState(null);
+  const [verificationCode, setVerificationCode] = useState('');
 
   useEffect(() => {
     
@@ -36,10 +37,22 @@ export default function CliAuth() {
     }
 
     
-    claimSession();
+    let cancelled = false;
+    apiClient.get(`/api/cli/login/session?sessionId=${encodeURIComponent(sessionId)}`)
+      .then((session) => {
+        if (cancelled) return;
+        if (session.status !== 'pending') throw new Error(`Session ${session.status}`);
+        setVerificationCode(session.verificationCode);
+        setStatus('confirm');
+      })
+      .catch((err) => {
+        if (!cancelled) { setError(err.message); setStatus('error'); }
+      });
+    return () => { cancelled = true; };
   }, [user, authLoading, sessionId]);
 
   async function claimSession() {
+    if (status !== 'confirm') return;
     setStatus('claiming');
     try {
       await apiClient.post('/api/cli/login/claim', { sessionId });
@@ -51,14 +64,14 @@ export default function CliAuth() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E8E7E5] flex items-center justify-center p-4 font-sans select-none">
-      <div className="w-full max-w-[420px] bg-[#FAFAF9] rounded-[20px] p-7 sm:p-8 border border-[#D9D8D6]/70 flex flex-col gap-6">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans select-none">
+      <div className="w-full max-w-[420px] bg-[#E9E9E9] rounded-figma p-7 sm:p-8 border border-[#D1D1D1]/70 flex flex-col gap-6">
         
         <div className="flex flex-col items-center text-center gap-2 pt-1">
           <Logo to="/" />
           <div className="flex items-center gap-2 mt-1">
-            <Terminal className="w-3.5 h-3.5 text-[#8A8785]" />
-            <p className="text-xs text-[#8A8785] font-medium">
+            <Terminal className="w-3.5 h-3.5 text-[#8C8C8C]" />
+            <p className="text-xs text-[#8C8C8C] font-medium">
               CLI Authentication
             </p>
           </div>
@@ -68,36 +81,48 @@ export default function CliAuth() {
         <div className="flex flex-col items-center text-center gap-4 py-4">
           {(status === 'loading' || status === 'claiming') && (
             <>
-              <div className="w-12 h-12 rounded-full bg-[#E8E7E5] flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-[#1A1A1A]" />
+              <div className="w-12 h-12 rounded-full bg-[#E9E9E9] flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-[#303030]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[#1A1A1A]">
+                <p className="text-sm font-semibold text-[#303030]">
                   {status === 'loading' ? 'Loading...' : 'Authorizing CLI...'}
                 </p>
-                <p className="text-xs text-[#8A8785] mt-1">
+                <p className="text-xs text-[#8C8C8C] mt-1">
                   Please wait a moment
                 </p>
               </div>
             </>
           )}
 
+          {status === 'confirm' && (
+            <>
+              <p className="text-sm font-semibold text-[#303030]">Authorize this terminal?</p>
+              <p className="text-xs text-[#8C8C8C]">Check that this code matches the one in your terminal.</p>
+              <p className="font-mono text-2xl font-bold tracking-widest text-[#303030]">{verificationCode}</p>
+              <p className="text-xs text-[#8C8C8C]">Signed in as {user?.email}</p>
+              <button type="button" onClick={claimSession} className="w-full py-3 rounded-figma bg-[#303030] text-white font-semibold text-sm hover:bg-black transition-colors duration-150">
+                Authorize CLI
+              </button>
+            </>
+          )}
+
           {status === 'success' && (
             <>
-              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              <div className="w-12 h-12 rounded-full bg-sidebar flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-ink" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[#1A1A1A]">
+                <p className="text-sm font-semibold text-[#303030]">
                   You're signed in to the CLI
                 </p>
-                <p className="text-xs text-[#8A8785] mt-1">
+                <p className="text-xs text-[#8C8C8C] mt-1">
                   You can close this tab and return to your terminal.
                 </p>
               </div>
-              <div className="w-full mt-2 bg-white border border-[#D9D8D6] rounded-[12px] px-4 py-3">
-                <p className="text-xs text-[#8A8785] font-medium">Signed in as</p>
-                <p className="text-sm font-semibold text-[#1A1A1A] mt-0.5">
+              <div className="w-full mt-2 bg-white border border-[#D1D1D1] rounded-figma px-4 py-3">
+                <p className="text-xs text-[#8C8C8C] font-medium">Signed in as</p>
+                <p className="text-sm font-semibold text-[#303030] mt-0.5">
                   {user?.email}
                 </p>
               </div>
@@ -106,11 +131,11 @@ export default function CliAuth() {
 
           {status === 'error' && (
             <>
-              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-sidebar flex items-center justify-center">
                 <XCircle className="w-6 h-6 text-red-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[#1A1A1A]">
+                <p className="text-sm font-semibold text-[#303030]">
                   Authorization failed
                 </p>
                 <p className="text-xs text-red-500 mt-1">
@@ -119,7 +144,7 @@ export default function CliAuth() {
               </div>
               <button
                 onClick={() => window.close()}
-                className="w-full mt-2 py-3 rounded-full bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 active:bg-black text-white font-semibold text-sm transition-colors duration-150 cursor-pointer"
+                className="w-full mt-2 py-3 rounded-figma bg-[#303030] hover:bg-[#303030]/90 active:bg-black text-white font-semibold text-sm transition-colors duration-150 cursor-pointer"
               >
                 Close
               </button>
@@ -128,7 +153,7 @@ export default function CliAuth() {
         </div>
 
         
-        <p className="text-center text-[11px] text-[#8A8785]">
+        <p className="text-center text-[11px] text-[#8C8C8C]">
           This authorization links your dockMore account to the CLI.
         </p>
       </div>
