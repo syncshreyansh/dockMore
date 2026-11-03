@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Check, FolderOpen, Edit3, Trash2, Download, Share2, Play, Music } from 'lucide-react';
-import ProviderIcon from './ProviderIcon';
-import { getFileIcon } from './FileRow';
+import { MoreVertical, Check, FolderOpen, Edit3, Trash2, Download, Share2 } from 'lucide-react';
 import FileThumbnail from './FileThumbnail';
 
 export default function FileGridCard({
@@ -16,8 +14,7 @@ export default function FileGridCard({
   const menuRef = useRef(null);
 
 
-  const { name, extension, provider, modified, size } = file || {};
-  const FileTypeIcon = file?.isFolder ? FolderOpen : getFileIcon(extension);
+  const { name, path, size } = file || {};
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -44,8 +41,8 @@ export default function FileGridCard({
         e.stopPropagation();
         setMenuOpen(true);
       }}
-      className={`group relative bg-white rounded-figma cursor-pointer select-none transition-colors duration-150 ease-out flex flex-col overflow-visible shadow-sm hover:shadow-panel ${
-        isSelected ? 'ring-2 ring-ink' : ''
+      className={`dm-media-tile group relative bg-white rounded-figma cursor-pointer select-none transition-colors duration-150 flex flex-col overflow-visible border border-transparent text-left ${
+        isSelected ? 'ring-1 ring-ink border-ink' : ''
       } ${className}`}
     >
       
@@ -66,23 +63,12 @@ export default function FileGridCard({
       
       <FileThumbnail file={file} />
 
-      <div className="p-3 flex items-center justify-between gap-2 bg-white relative rounded-b-figma">
-        <div className="flex items-center gap-2 min-w-0">
-          <FileTypeIcon className="w-4 h-4 text-ink shrink-0" />
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold text-ink truncate max-w-[120px] sm:max-w-[150px] leading-tight">
-              {name}
-            </span>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <ProviderIcon provider={provider} size="xs" />
-              <span className="text-[10px] text-muted truncate">
-                {modified} • {size}
-              </span>
-            </div>
-          </div>
+      <div className="p-3 flex items-start justify-between gap-2 relative">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-ink">{name}</p>
+          <p className="mt-1 truncate text-xs text-muted">{path || '/'} {'\u00b7'} {size}</p>
         </div>
 
-        
         <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"

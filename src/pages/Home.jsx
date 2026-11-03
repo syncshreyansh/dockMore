@@ -5,6 +5,7 @@ import {
   ChevronDown,
   LayoutGrid,
   List,
+  RefreshCw,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -148,9 +149,14 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <PillButton to="/accounts" variant="solid" size="sm" className="shrink-0">
-            Connect Cloud Account
-          </PillButton>
+          <div className="flex shrink-0 items-center gap-2">
+            <PillButton variant="ghost" size="sm" icon={RefreshCw} onClick={() => refetchAccounts().catch(() => {})}>
+              Retry
+            </PillButton>
+            <PillButton to="/accounts" variant="solid" size="sm">
+              Connect Cloud Account
+            </PillButton>
+          </div>
         </div>
       )}
 

@@ -13,6 +13,10 @@ export async function getCodeProjects() {
       accountId: p.backup_account_id,
       provider: p.backup_provider || 'google-drive',
       accountEmail: p.backup_account_email || '',
+      cloudFolderId: p.cloud_folder_id || null,
+      sourceArchiveFileId: p.backup_account_id ? p.source_archive_file_id || null : null,
+      sourceArchiveUpdatedAt: p.source_archive_updated_at || null,
+      sourceArchiveSizeBytes: p.source_archive_size_bytes == null ? null : Number(p.source_archive_size_bytes),
       snapshotCount: p.snapshot_count || 0,
       lastSnapshot: p.last_snapshot_at
         ? new Date(p.last_snapshot_at).toLocaleTimeString([], {
@@ -97,6 +101,10 @@ export async function toggleWatchStatus(id) {
 export async function getProjectSnapshots(projectId) {
   const project = await getProjectById(projectId);
   return project.snapshots || [];
+}
+
+export async function downloadProjectArchive(projectId) {
+  return apiClient.download(`/api/code-projects/${projectId}/source-archive`);
 }
 
 function mapSnapshot(snapshot) {

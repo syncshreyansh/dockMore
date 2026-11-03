@@ -9,6 +9,7 @@ import { promisify } from 'util';
 import { api } from '../api.js';
 import { getProject, setProject } from '../config.js';
 import { requireAuth, requireProject } from '../utils.js';
+import { withProgress } from '../progress.js';
 
 const exec = promisify(execFile);
 const secretPattern = /(-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|(?:api[_-]?key|secret|password|access[_-]?token|client[_-]?secret)\s*[:=]\s*['\"][^'\"]{8,}|(?:ghp_|github_pat_|sk_live_|AKIA)[A-Za-z0-9_]{12,})/i;
@@ -50,10 +51,10 @@ export async function retryPush() {
   const head = await git(['rev-parse', 'HEAD'], cwd);
   if (head !== pending.hash) throw new Error('HEAD changed since the pending push; inspect the branch before retrying');
   if (!pending.pushed) {
-    await git(['push', pending.remote, `HEAD:refs/heads/${pending.branch}`], cwd);
+    await withProgress('Pushing commit to Git remote', () => git(['push', pending.remote, `HEAD:refs/heads/${pending.branch}`], cwd), { success: false, failure: false });
     setProject(cwd, { pendingPush: { ...pending, pushed: true } });
   }
-  await api.post(`/api/code-projects/${project.projectId}/commit`, { commitMessage: pending.message });
+  await withProgress('Syncing commit status with Dockmore', () => api.post(`/api/code-projects/${project.projectId}/commit`, { commitMessage: pending.message }), { success: false, failure: false });
   setProject(cwd, { pendingPush: null });
   console.log(chalk.green('Push and DockMore metadata sync completed.'));
 }
@@ -82,11 +83,14 @@ export async function gitpush(options = {}) {
     if (hadIndex) fs.copyFileSync(realIndex, originalIndex);
     const originalIndexHash = hadIndex ? crypto.createHash('sha256').update(fs.readFileSync(originalIndex)).digest('hex') : null;
     const env = { GIT_INDEX_FILE: tempIndex };
-    await git(['add', '-A'], cwd, env);
-    const reviewedDiff = await stagedDiff(cwd, env);
+    const { reviewedDiff, files } = await withProgress('Scanning project changes', async () => {
+      await git(['add', '-A'], cwd, env);
+      const diff = await stagedDiff(cwd, env);
+      const changedFiles = diff ? (await git(['diff', '--cached', '--name-only', '-z'], cwd, env)).split('\0').filter(Boolean) : [];
+      return { reviewedDiff: diff, files: changedFiles };
+    }, { success: false, failure: false });
     if (!reviewedDiff) { console.log('No changes to commit.'); return; }
     const reviewedHash = crypto.createHash('sha256').update(reviewedDiff).digest('hex');
-    const files = (await git(['diff', '--cached', '--name-only', '-z'], cwd, env)).split('\0').filter(Boolean);
     console.log(chalk.bold(`Reviewing ${files.length} changed file(s) for ${remote}/${branch}:`));
     files.forEach((file) => console.log(`  ${file}`));
     console.log('\n' + reviewedDiff + '\n');
@@ -100,7 +104,7 @@ export async function gitpush(options = {}) {
     const { useAi } = await inquirer.prompt([{ type: 'confirm', name: 'useAi', message: 'Send the complete diff to the configured AI provider for review and a commit message?', default: false }]);
     let message = `Update ${files.length} project file${files.length === 1 ? '' : 's'}`;
     if (useAi) {
-      const result = await api.post(`/api/code-projects/${project.projectId}/generate-commit`, { diffText: reviewedDiff });
+      const result = await withProgress('Reviewing changes with AI', () => api.post(`/api/code-projects/${project.projectId}/generate-commit`, { diffText: reviewedDiff }), { success: false, failure: false });
       (result.warnings || []).forEach((warning) => console.log(chalk.yellow(`  ${warning}`)));
       if (result.warnings?.length) {
         const { proceed } = await inquirer.prompt([{ type: 'confirm', name: 'proceed', message: 'Continue despite AI warnings?', default: false }]);
@@ -125,11 +129,13 @@ export async function gitpush(options = {}) {
       if (hadIndex) fs.copyFileSync(originalIndex, realIndex);
       else fs.rmSync(realIndex, { force: true });
     };
-    await git(['add', '-A'], cwd);
-    if (await stagedDiff(cwd) !== reviewedDiff) {
-      throw new Error('Git index changed during review. Original index restored; no commit was created.');
-    }
-    await git(['commit', '-m', message], cwd);
+    await withProgress('Creating reviewed Git commit', async () => {
+      await git(['add', '-A'], cwd);
+      if (await stagedDiff(cwd) !== reviewedDiff) {
+        throw new Error('Git index changed during review. Original index restored; no commit was created.');
+      }
+      await git(['commit', '-m', message], cwd);
+    }, { success: false, failure: false });
     restoreIndex = null;
     const hash = await git(['rev-parse', 'HEAD'], cwd);
     setProject(cwd, { pendingPush: { hash, branch, remote, message, pushed: false } });

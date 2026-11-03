@@ -3,6 +3,7 @@ import { watch } from './commands/watch.js';
 import { pause } from './commands/pause.js';
 import { retryPush } from './commands/gitpush.js';
 import { inspectGitPush, executeGitPush } from './gitpushReview.js';
+import { changeInterval } from './commands/interval.js';
 
 const [action, projectId] = process.argv.slice(2);
 const cwd = process.cwd();
@@ -20,9 +21,11 @@ const body = raw ? JSON.parse(raw) : {};
 
 try {
   if (action === 'watch') {
-    await watch({ interval: getProject(cwd).interval || 15 });
+    await watch({});
   } else if (action === 'pause') {
     await pause();
+  } else if (action === 'interval') {
+    await changeInterval(body.minutes);
   } else if (action === 'push-review') {
     process.stdout.write(JSON.stringify(await inspectGitPush(cwd, body.remote)));
   } else if (action === 'push') {

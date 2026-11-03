@@ -13,6 +13,7 @@ import PillButton from '../components/ui/PillButton';
 import defaultAvatar from '../assets/icons/avatar.svg';
 import { useAccounts } from '../hooks/useAccounts';
 import { useToast } from '../context/ToastContext';
+import ThemedSelect from '../components/ui/ThemedSelect';
 
 export default function Settings() {
   const { user, updateUser, exportBackup } = useAccounts();
@@ -286,18 +287,19 @@ export default function Settings() {
                   <label className="block text-xs font-semibold text-ink mb-1.5">
                     Cloud-to-Cloud Compression
                   </label>
-                  <select
+                  <ThemedSelect
+                    className="w-full"
                     value={compressionLevel}
                     onChange={(e) => {
                       setCompressionLevel(e.target.value);
                       showToast('Compression level updated', 'info');
                     }}
-                    className="w-full px-4 py-2.5 rounded-figma bg-white border-0 text-sm text-ink cursor-pointer"
+                    selectClassName="cursor-pointer"
                   >
                     <option value="none">No compression (Direct binary stream)</option>
                     <option value="balanced">Balanced (Zstandard - recommended)</option>
                     <option value="maximum">Maximum compression (For slow connections)</option>
-                  </select>
+                  </ThemedSelect>
                 </div>
               </div>
             </div>

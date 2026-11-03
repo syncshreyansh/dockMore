@@ -1,8 +1,48 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, LoaderCircle, X } from 'lucide-react';
 import gsap from 'gsap';
 
 const ToastContext = createContext(null);
+
+function formatToastMessage(message, type) {
+  const raw = typeof message === 'string' ? message : message?.message || String(message || '');
+  if (type !== 'error' && type !== 'danger') return raw;
+
+  const normalized = raw.trim();
+  const lower = normalized.toLowerCase();
+  if (!normalized) return 'Something went wrong. Try again.';
+  if (/\b(project).*(not found|404)|(not found|404).*\b(project)\b/.test(lower)) {
+    return 'Project not found. Refresh the page and try again.';
+  }
+  if (/\b(account).*(not found|404)|(not found|404).*\b(account)\b/.test(lower)) {
+    return 'Cloud account not found. Refresh the page and try again.';
+  }
+  if (/\b(file|folder).*(not found|404)|(not found|404).*\b(file|folder)\b/.test(lower)) {
+    return 'File or folder not found. Refresh and try again.';
+  }
+  if (/not found|\b404\b/i.test(lower)) {
+    return 'Could not find what you requested. Refresh and try again.';
+  }
+  if (/401|unauthorized|session (has )?expired/i.test(lower)) {
+    return 'Your session has expired. Sign in again and retry.';
+  }
+  if (/403|forbidden|permission denied/i.test(lower)) {
+    return 'You do not have access to complete that action.';
+  }
+  if (/failed to fetch|networkerror|network request failed|fetch failed|\boffline\b/i.test(lower)) {
+    return 'Could not reach Dockmore. Check your connection and try again.';
+  }
+  if (/timeout|timed out|aborted/i.test(lower)) {
+    return 'Dockmore took too long to respond. Try again.';
+  }
+  if (/429|too many requests/i.test(lower)) {
+    return 'Too many requests. Wait a moment and try again.';
+  }
+  if (/\b5\d\d\b|internal server error|service unavailable|bad gateway/i.test(lower)) {
+    return 'Dockmore could not complete that request. Try again shortly.';
+  }
+  return normalized.length > 180 ? `${normalized.slice(0, 177).trimEnd()}...` : normalized;
+}
 
 
 function ToastItem({ t, onDismiss, registerDismiss }) {
@@ -49,6 +89,7 @@ function ToastItem({ t, onDismiss, registerDismiss }) {
 
   const isError = t.type === 'error' || t.type === 'danger';
   const isSuccess = t.type === 'success';
+  const isLoading = t.type === 'loading';
 
   return (
     <div
@@ -58,7 +99,9 @@ function ToastItem({ t, onDismiss, registerDismiss }) {
       className="pointer-events-auto bg-[#E9E9E9] text-[#242424] text-sm font-normal px-4 py-3.5 rounded-figma shadow-menu border-0 flex items-start justify-between gap-3"
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        {isError ? (
+        {isLoading ? (
+          <LoaderCircle className="w-4 h-4 text-ink shrink-0 animate-spin" aria-label="In progress" />
+        ) : isError ? (
           <AlertCircle className="w-4 h-4 text-ink shrink-0" aria-label="Error" />
         ) : isSuccess ? (
           <CheckCircle2 className="w-4 h-4 text-ink shrink-0" aria-label="Success" />
@@ -94,7 +137,7 @@ export function ToastProvider({ children }) {
 
   const showToast = useCallback((message, type = 'info', duration = 3200) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const newToast = { id, message, type };
+    const newToast = { id, message: formatToastMessage(message, type), type };
 
     setToasts((prev) => [...prev, newToast]);
 

@@ -14,6 +14,8 @@ import { listProjects, untrack, relink, repair } from './commands/projects.js';
 import { snapshots } from './commands/snapshots.js';
 import { doctor } from './commands/doctor.js';
 import { startBridge } from './bridgeControl.js';
+import { withProgress } from './progress.js';
+import { changeInterval } from './commands/interval.js';
 
 const program = new Command();
 
@@ -42,10 +44,13 @@ program
 
 program
   .command('initialize')
-  .description('Initialize dockMore tracking for the current project')
-  .action(async () => {
-    await initialize();
+  .description('Initialize project tracking and its cloud source archive')
+  .option('--interval <minutes>', 'Sync interval: 5, 10, 15, 20, 25, 30, or 60 minutes (default: 15)')
+  .action(async (opts) => {
+    await initialize(opts);
   });
+
+program.command('interval <minutes>').description('Change the current project sync interval').action(changeInterval);
 
 program.command('login').option('--force', 'Start a new browser login').action((opts) => login(opts));
 program.command('logout').action(logout);
@@ -53,8 +58,8 @@ program.command('status').action(status);
 
 program
   .command('watch')
-  .description('Start background snapshot daemon for the current project')
-  .option('--interval <minutes>', 'Snapshot interval in minutes (10-30, default 15)', '15')
+  .description('Start background snapshots and scheduled cloud source sync')
+  .option('--interval <minutes>', 'Sync interval: 5, 10, 15, 20, 25, 30, or 60 minutes (default: project setting or 15)')
   .action(async (opts) => {
     await watch(opts);
   });
@@ -98,7 +103,7 @@ program.command('repair').description('Check and reconcile the current project l
 program.command('snapshots [action] [hash]').option('--output <path>', 'Export archive destination').action((action, hash, opts) => snapshots(action, hash, opts.output));
 program.command('doctor').description('Check CLI environment and project health').option('--json', 'Output machine-readable results').action(doctor);
 program.command('bridge').description('Start local website controls for this computer').action(async () => {
-  const bridge = await startBridge();
+  const bridge = await withProgress('Starting website controls', () => startBridge(), { success: false, failure: false });
   console.log(`Website controls ready on 127.0.0.1:45771 (PID ${bridge.pid}).`);
 });
 
@@ -124,7 +129,8 @@ program.configureHelp({
       chalk.bold('  Project Commands:'),
       `    ${chalk.cyan('initialize')}             Initialize tracking for the current project`,
       `    ${chalk.cyan('watch')}                  Start background snapshot daemon`,
-      `    ${chalk.cyan('watch --interval <N>')}   Set snapshot interval (10-30 min)`,
+      `    ${chalk.cyan('watch --interval <N>')}   Set sync interval (5, 10, 15, 20, 25, 30, 60 min)`,
+      `    ${chalk.cyan('interval <N>')}           Change current project sync interval`,
       `    ${chalk.cyan('pause')}                  Pause the snapshot daemon`,
       `    ${chalk.cyan('resume')}                 Resume the snapshot daemon`,
       `    ${chalk.cyan('gitpush')}                AI-assisted commit and push`,

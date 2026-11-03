@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import SlideUpModal from './SlideUpModal';
 import PillButton from './PillButton';
+import ThemedSelect from './ThemedSelect';
 
 function Skeleton({ className = '' }) {
   return <div aria-hidden="true" className={`rounded-figma bg-track/70 ${className}`} />;
@@ -91,9 +92,9 @@ export default function GitPushReviewModal({ review, busy, onClose, onConfirm, o
           {review.remotes?.length > 1 && (
             <label className="text-xs font-semibold text-ink">
               Git remote
-              <select value={review.remote} onChange={(event) => onRemoteChange(event.target.value)} disabled={busy} className="mt-2 w-full rounded-figma bg-white px-4 py-3 text-sm text-ink outline-none">
+              <ThemedSelect value={review.remote} onChange={(event) => onRemoteChange(event.target.value)} disabled={busy} className="mt-2 w-full">
                 {review.remotes.map((remote) => <option key={remote} value={remote}>{remote}</option>)}
-              </select>
+              </ThemedSelect>
             </label>
           )}
 

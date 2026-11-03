@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import { getProject } from '../config.js';
 import { requireAuth, requireProject } from '../utils.js';
 import { watch } from './watch.js';
 import { daemonState } from '../daemonControl.js';
@@ -22,5 +21,5 @@ export async function resume() {
   }
 
   console.log(chalk.dim('  Resuming watch daemon...'));
-  await watch({ interval: project.interval || 15 });
+  await watch({});
 }

@@ -24,11 +24,13 @@ export function FilesProvider({ children }) {
   const folderLoadId = useRef(0);
   const loadedUserId = useRef(null);
   const inventoryInFlight = useRef(null);
+  const deepInventoryInFlight = useRef(null);
+  const deepInventorySignature = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentFolderKey, setCurrentFolderKey] = useState(null);
 
-  const fetchFilesAndFolders = useCallback(async () => {
+  const fetchFilesAndFolders = useCallback(async ({ force = false } = {}) => {
     if (!authUserId) { ++loadId.current; setFiles([]); setError(null); setLoading(false); return; }
     if (!accountsReady) {
       if (accountsLoading) setLoading(true);
@@ -40,29 +42,59 @@ export function FilesProvider({ children }) {
     if (inventoryInFlight.current?.signature === accountSignature) return inventoryInFlight.current.promise;
     const request = ++loadId.current;
     if (loadedUserId.current !== authUserId) setLoading(true);
-    const promise = apiGetFiles({ accounts: accountSnapshot }).then((next) => {
+    const rootPromise = apiGetFiles({ accounts: accountSnapshot, providerFolderId: 'root' }).then((rootFiles) => {
       if (request !== loadId.current) return;
-      setFiles(next);
-      setError(next.errors?.length ? next.errors.join('; ') : null);
+      if (rootFiles.errors?.length) throw new Error(rootFiles.errors.join('; '));
+      setFiles((previous) => {
+        const rootIds = new Set(rootFiles.map((file) => file.id));
+        const retained = previous.filter((file) => !file.parentIds?.includes(makeFileKey(file.accountId, 'root')) || rootIds.has(file.id));
+        const merged = new Map(retained.map((file) => [file.id, file]));
+        for (const file of rootFiles) merged.set(file.id, file);
+        return [...merged.values()];
+      });
+      setError(null);
       loadedUserId.current = authUserId;
+      setLoading(false);
     }).catch((err) => {
-      if (request === loadId.current) setError(err.message);
+      if (request === loadId.current) { setError(err.message); setLoading(false); }
     }).finally(() => {
-      if (request === loadId.current) setLoading(false);
       if (inventoryInFlight.current?.request === request) inventoryInFlight.current = null;
     });
-    inventoryInFlight.current = { signature: accountSignature, request, promise };
-    return promise;
+    inventoryInFlight.current = { signature: accountSignature, request, promise: rootPromise };
+    await rootPromise;
+    if (request !== loadId.current || (!force && deepInventorySignature.current === accountSignature)) return;
+    if (deepInventoryInFlight.current?.signature === accountSignature) return deepInventoryInFlight.current.promise;
+    const deepRequest = request;
+    const deepPromise = apiGetFiles({ accounts: accountSnapshot }).then((next) => {
+      if (deepRequest !== loadId.current) return;
+      setFiles((previous) => {
+        const fetched = new Map(next.map((file) => [file.id, file]));
+        // Retain items created or fetched from a folder after this inventory began.
+        for (const file of previous) if (!fetched.has(file.id) && file.parentIds?.some((parent) => parent !== makeFileKey(file.accountId, 'root'))) fetched.set(file.id, file);
+        return [...fetched.values()];
+      });
+      setError(next.errors?.length ? next.errors.join('; ') : null);
+      deepInventorySignature.current = accountSignature;
+    }).catch((err) => {
+      if (deepRequest === loadId.current) setError(err.message);
+    }).finally(() => {
+      if (deepInventoryInFlight.current?.request === deepRequest) deepInventoryInFlight.current = null;
+    });
+    deepInventoryInFlight.current = { signature: accountSignature, request: deepRequest, promise: deepPromise };
+    return deepPromise;
   }, [accountSignature, accountsLoading, accountsReady, authUserId]);
 
   const openFolder = useCallback(async (folderKey) => {
     const request = ++folderLoadId.current;
-    setCurrentFolderKey(folderKey || null);
-    if (!folderKey || !accountsRef.current.length) return;
+    if (!folderKey) { setCurrentFolderKey(null); return; }
     const selected = filesRef.current.find((file) => file.id === folderKey);
-    if (!selected?.targetId) return;
+    const parsed = parseFileKey(folderKey);
+    const account = accountsRef.current.find((item) => item.id === (selected?.accountId || parsed?.accountId));
+    const providerFolderId = selected?.targetId || selected?.providerFileId || parsed?.providerFileId;
+    if (!account || !providerFolderId) return;
+    setCurrentFolderKey(folderKey);
     try {
-      const next = await apiGetFiles({ accounts: accountsRef.current, folder: folderKey, providerFolderId: selected.targetId });
+      const next = await apiGetFiles({ accounts: [account], folder: folderKey, providerFolderId });
       if (request !== folderLoadId.current) return;
       if (next.errors?.length) throw new Error(next.errors.join('; '));
       setFiles((previous) => {
@@ -94,6 +126,8 @@ export function FilesProvider({ children }) {
     ++loadId.current;
     ++folderLoadId.current;
     loadedUserId.current = null;
+    deepInventorySignature.current = null;
+    deepInventoryInFlight.current = null;
     setFiles([]);
     setCurrentFolderKey(null);
     setError(null);
@@ -337,7 +371,7 @@ export function FilesProvider({ children }) {
         createFolder,
         renameFolder,
         deleteFolder,
-        refetch: fetchFilesAndFolders,
+        refetch: () => fetchFilesAndFolders({ force: true }),
         openFolder,
         currentFolderKey,
         downloadFile: apiDownloadFile,

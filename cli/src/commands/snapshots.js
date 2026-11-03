@@ -4,6 +4,7 @@ import os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { requireProject } from '../utils.js';
+import { withProgress } from '../progress.js';
 
 const exec = promisify(execFile);
 async function shadowGit(project, cwd, args) {
@@ -19,13 +20,13 @@ export async function snapshots(action = 'list', hash, output) {
   const cwd = process.cwd();
   const project = requireProject(cwd);
   if (action === 'list') {
-    console.log(await shadowGit(project, cwd, ['log', '--format=%h %ci %s', '-30']));
+    console.log(await withProgress('Loading snapshots', () => shadowGit(project, cwd, ['log', '--format=%h %ci %s', '-30']), { success: false, failure: false }));
     return;
   }
   if (!hash || !/^[a-f0-9]{7,64}$/i.test(hash)) throw new Error('Provide a Git snapshot hash');
-  const fullHash = await shadowGit(project, cwd, ['rev-parse', '--verify', `${hash}^{commit}`]);
+  const fullHash = await withProgress('Finding snapshot', () => shadowGit(project, cwd, ['rev-parse', '--verify', `${hash}^{commit}`]), { success: false, failure: false });
   if (action === 'inspect') {
-    console.log(await shadowGit(project, cwd, ['show', '--stat', '--format=fuller', fullHash]));
+    console.log(await withProgress('Inspecting snapshot', () => shadowGit(project, cwd, ['show', '--stat', '--format=fuller', fullHash]), { success: false, failure: false }));
     return;
   }
   if (action === 'restore') {
@@ -37,8 +38,10 @@ export async function snapshots(action = 'list', hash, output) {
     const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'dockmore-restore-'));
     try {
       const env = { ...process.env, GIT_DIR: project.shadowRepoPath, GIT_WORK_TREE: cwd, GIT_INDEX_FILE: path.join(temporary, 'index') };
-      await exec('git', ['read-tree', fullHash], { cwd, env });
-      await exec('git', ['checkout-index', '-a', `--prefix=${destination}${path.sep}`], { cwd, env });
+      await withProgress('Restoring snapshot files', async () => {
+        await exec('git', ['read-tree', fullHash], { cwd, env });
+        await exec('git', ['checkout-index', '-a', `--prefix=${destination}${path.sep}`], { cwd, env });
+      }, { success: false, failure: false });
     } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
     console.log(`Restored snapshot ${fullHash.slice(0, 7)} to ${destination}`);
     return;
@@ -47,6 +50,6 @@ export async function snapshots(action = 'list', hash, output) {
   if (!output) throw new Error('Provide --output <archive.tar>');
   const destination = path.resolve(output);
   if (fs.existsSync(destination)) throw new Error(`Output already exists: ${destination}`);
-  await shadowGit(project, cwd, ['archive', '--format=tar', `--output=${destination}`, fullHash]);
+  await withProgress('Exporting snapshot archive', () => shadowGit(project, cwd, ['archive', '--format=tar', `--output=${destination}`, fullHash]), { success: false, failure: false });
   console.log(`Exported snapshot ${fullHash.slice(0, 7)} to ${destination}`);
 }

@@ -96,7 +96,7 @@ export default function AllFiles() {
     if (folderParam !== currentFolderKey) {
       openFolder(folderParam).catch((err) => showToast(err.message, 'error'));
     }
-  }, [folderParam, currentFolderKey, openFolder, showToast]);
+  }, [folderParam, currentFolderKey, openFolder, showToast, accounts]);
 
   useEffect(() => { setSelectedIds([]); }, [folderParam]);
   const folderTrail = useMemo(() => getFolderTrail(folderParam, files), [folderParam, files]);

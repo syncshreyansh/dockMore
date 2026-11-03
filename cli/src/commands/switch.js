@@ -21,7 +21,7 @@ export async function switchAccount() {
     {
       type: 'list',
       name: 'accountId',
-      message: 'Select your preferred cloud account (local snapshots are unaffected):',
+      message: 'Select your preferred cloud account for project source backups:',
       choices,
       default: currentId,
     },

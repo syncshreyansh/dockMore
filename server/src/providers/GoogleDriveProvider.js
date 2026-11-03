@@ -138,15 +138,18 @@ class GoogleDriveProvider extends CloudProvider {
 
     const requestBody = {
       name: meta.name,
-      ...(meta.parentId && { parents: [meta.parentId] }),
+      ...(!meta.fileId && meta.parentId && { parents: [meta.parentId] }),
     };
 
-    const response = await drive.files.create({
+    const fileOptions = {
       requestBody,
       media: { mimeType: meta.mimeType, body: fileStream },
       fields: 'id, name',
       supportsAllDrives: true,
-    });
+    };
+    const response = meta.fileId
+      ? await drive.files.update({ ...fileOptions, fileId: meta.fileId })
+      : await drive.files.create(fileOptions);
 
     return { id: response.data.id, name: response.data.name };
   }

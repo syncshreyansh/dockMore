@@ -47,7 +47,11 @@ function runCommand(cwd, action, projectId, body) {
         try { return resolve(JSON.parse(stdout)); }
         catch { return reject(new Error('CLI returned an invalid response')); }
       }
-      return resolve({ success: true, status: action === 'watch' ? 'watching' : action === 'pause' ? 'paused' : 'pushed' });
+      return resolve({
+        success: true,
+        status: action === 'watch' ? 'watching' : action === 'pause' ? 'paused' : action === 'interval' ? 'updated' : 'pushed',
+        ...(action === 'interval' ? { interval: body?.minutes } : {}),
+      });
     });
     child.stdin.end(JSON.stringify(body || {}));
   });
@@ -64,7 +68,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/health') return send(res, 200, { bridgeId, pid: process.pid });
   if (!origin || !allowedOrigin(origin)) return send(res, 403, { error: 'Website origin is not allowed' });
   if (req.method === 'OPTIONS') return send(res, 204, {});
-  const match = /^\/projects\/([a-f0-9-]{36})\/(watch|pause|push-review|push|push-retry)$/.exec(req.url || '');
+  const match = /^\/projects\/([a-f0-9-]{36})\/(watch|pause|interval|push-review|push|push-retry)$/.exec(req.url || '');
   if (req.method !== 'POST' || !match) return send(res, 404, { error: 'Not found' });
   try {
     const browserToken = req.headers.authorization?.replace(/^Bearer\s+/i, '');

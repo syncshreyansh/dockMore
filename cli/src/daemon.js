@@ -5,6 +5,7 @@ import path from 'path';
 import { simpleGit } from 'simple-git';
 import fetch from 'node-fetch';
 import { getToken, setToken } from './config.js';
+import { uploadCurrentSourceArchive } from './sourceArchive.js';
 
 
 const PROJECT_DIR  = process.env.DOCKMORE_PROJECT_DIR;
@@ -150,21 +151,55 @@ async function flushPendingSnapshots() {
   }
 }
 
+async function syncCloudSource() {
+  try {
+    await uploadCurrentSourceArchive({ projectId: PROJECT_ID, projectDir: PROJECT_DIR, shadowRepoPath: SHADOW_DIR });
+  } catch (err) {
+    fs.appendFileSync(path.join(SHADOW_DIR, 'daemon-error.log'), `[${new Date().toISOString()}] cloud source sync: ${err.message}\n`);
+  }
+}
 
-if (!(await snapshot())) process.exit(1);
-if (process.send) process.send({ type: 'ready' });
 
-
-const intervalMs = INTERVAL_MIN * 60 * 1000;
-let running = false;
-setInterval(async () => {
-  if (running) return;
-  running = true;
-  try { heartbeat(); await snapshot(); } finally { running = false; }
-}, intervalMs);
+const settingsPath = path.join(SHADOW_DIR, 'daemon-settings.json');
+const VALID_INTERVALS = [5, 10, 15, 20, 25, 30, 60];
+let activeInterval = VALID_INTERVALS.includes(INTERVAL_MIN) ? INTERVAL_MIN : 15;
+let snapshotTimer;
+let running = true;
+function scheduleSnapshot() {
+  clearTimeout(snapshotTimer);
+  snapshotTimer = setTimeout(async () => {
+    if (running) {
+      scheduleSnapshot();
+      return;
+    }
+    running = true;
+    try {
+      heartbeat();
+      if (await snapshot()) await syncCloudSource();
+    } finally {
+      running = false;
+      scheduleSnapshot();
+    }
+  }, activeInterval * 60 * 1000);
+}
+function reloadInterval() {
+  try {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    const nextInterval = Number(settings.intervalMinutes);
+    if (VALID_INTERVALS.includes(nextInterval) && nextInterval !== activeInterval) {
+      activeInterval = nextInterval;
+      scheduleSnapshot();
+    }
+  } catch {}
+}
+scheduleSnapshot();
+setInterval(reloadInterval, 2000);
 setInterval(() => { heartbeat(); void remoteHeartbeat(); }, 30_000);
 setTimeout(() => { void refreshCredential(); }, 60_000);
 setInterval(() => { void refreshCredential(); }, 12 * 60 * 60 * 1000);
+
+if (process.send) process.send({ type: 'ready' });
+void snapshot().then((saved) => saved ? syncCloudSource() : undefined).finally(() => { running = false; });
 
 
 process.on('SIGTERM', () => {

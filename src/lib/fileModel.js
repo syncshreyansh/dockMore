@@ -17,7 +17,9 @@ export function detectFileType(mime = '', name = '') {
 }
 
 export function mapDriveFile(f, account, selectedFolder, providerFolderId) {
-  const parentIds = (f.parents || []).map((parent) => makeFileKey(account.id, parent));
+  const parentIds = providerFolderId === 'root'
+    ? [makeFileKey(account.id, 'root')]
+    : (f.parents || []).map((parent) => makeFileKey(account.id, parent));
   if (selectedFolder && providerFolderId && (f.parents || []).includes(providerFolderId) && !parentIds.includes(selectedFolder)) parentIds.unshift(selectedFolder);
   const size = Number(f.size || 0);
   const unit = size > 0 ? Math.min(4, Math.floor(Math.log(size) / Math.log(1024))) : 0;

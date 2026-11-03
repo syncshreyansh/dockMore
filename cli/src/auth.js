@@ -4,6 +4,7 @@ import open from 'open';
 import { request } from './api.js';
 import { setToken, getToken, clearToken, setFrontendOrigin } from './config.js';
 import { startBridge, stopBridge } from './bridgeControl.js';
+import { withProgress } from './progress.js';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 120_000; 
@@ -95,17 +96,19 @@ export async function login({ force = false } = {}) {
 
 export async function logout() {
   if (!getToken()) return;
-  await stopBridge();
-  try { await request('/api/cli/logout', { method: 'POST' }); }
-  catch (err) { if (err.status !== 401) throw err; }
-  finally { clearToken(); }
+  await withProgress('Signing out of Dockmore CLI', async () => {
+    await stopBridge();
+    try { await request('/api/cli/logout', { method: 'POST' }); }
+    catch (err) { if (err.status !== 401) throw err; }
+    finally { clearToken(); }
+  }, { success: false, failure: false });
   console.log(chalk.green('✓ CLI credential revoked locally and on the server.'));
 }
 
 export async function status() {
   if (!getToken()) throw new Error('Not logged in. Run `dockmore login`.');
   try {
-    const user = await request('/api/cli/me');
+    const user = await withProgress('Checking CLI login status', () => request('/api/cli/me'), { success: false, failure: false });
     console.log(chalk.green(`✓ Logged in as ${user.email}.`));
     try { await startBridge(); } catch (err) { console.log(chalk.yellow(`  Website controls unavailable: ${err.message}`)); }
   } catch (err) {

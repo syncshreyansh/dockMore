@@ -8,6 +8,7 @@ import fs from 'fs';
 import { setProject, getToken, API_BASE } from '../config.js';
 import { requireAuth, requireProject } from '../utils.js';
 import { api } from '../api.js';
+import { setDaemonInterval } from '../daemonSettings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +20,13 @@ export async function watch(options) {
   const project = requireProject(projectDir);
   if (!project) return;
 
+  const validIntervals = [5, 10, 15, 20, 25, 30, 60];
+  const requestedInterval = options.interval !== undefined ? Number(options.interval) : Number(project.interval || 15);
+  if (options.interval !== undefined && !validIntervals.includes(requestedInterval)) {
+    throw new Error('Sync interval must be one of 5, 10, 15, 20, 25, 30, or 60 minutes');
+  }
+  const interval = validIntervals.includes(requestedInterval) ? requestedInterval : 15;
+
   
   if (project.watchPid) {
     try {
@@ -26,8 +34,10 @@ export async function watch(options) {
       const heartbeat = JSON.parse(fs.readFileSync(path.join(project.shadowRepoPath, 'daemon-heartbeat.json'), 'utf8'));
       if (heartbeat.pid !== project.watchPid || heartbeat.daemonId !== project.daemonId || heartbeat.projectId !== project.projectId) throw new Error('Stored daemon identity does not match');
       console.log(chalk.yellow(`  Watch daemon is already running (PID: ${project.watchPid}).`));
+      setDaemonInterval(project.shadowRepoPath, interval);
+      setProject(projectDir, { interval });
       await api.patch(`/api/code-projects/${project.projectId}`, {
-        watch_status: 'watching', snapshot_interval_minutes: Number(project.interval) || 15,
+        watch_status: 'watching', snapshot_interval_minutes: interval,
       });
       console.log(chalk.dim('  Run `dockmore pause` to stop it first.'));
       return;
@@ -39,9 +49,7 @@ export async function watch(options) {
   }
 
   
-  let interval = parseInt(options.interval || project.interval || 15, 10);
-  if (isNaN(interval)) interval = 15;
-  interval = Math.max(10, Math.min(30, interval));
+  setDaemonInterval(project.shadowRepoPath, interval);
 
   const spinner = ora('Starting watch daemon...').start();
 

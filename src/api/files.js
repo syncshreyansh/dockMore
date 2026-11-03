@@ -1,6 +1,7 @@
 import { apiClient } from '../lib/apiClient';
 import { getAccounts } from './accounts';
 import { makeFileKey, parseFileKey, mapDriveFile, withFilePaths } from '../lib/fileModel';
+import { retryTransient } from '../lib/retryTransient';
 export { makeFileKey, parseFileKey } from '../lib/fileModel';
 
 export async function getFiles(filters = {}) {
@@ -10,7 +11,7 @@ export async function getFiles(filters = {}) {
   const relevant = accounts.filter((account) => account.status !== 'expired' && (!selected || account.id === selected.accountId));
   const results = await Promise.allSettled(relevant.map(async (account) => {
     const folderId = filters.providerFolderId || selected?.providerFileId || '*';
-    const response = await apiClient.get('/api/accounts/' + account.id + '/files?folderId=' + encodeURIComponent(folderId));
+    const response = await retryTransient(() => apiClient.get('/api/accounts/' + account.id + '/files?folderId=' + encodeURIComponent(folderId)));
     return response.files.map((file) => mapDriveFile(file, account, filters.folder, folderId));
   }));
   let files = withFilePaths(results.flatMap((result) => result.status === 'fulfilled' ? result.value : []));

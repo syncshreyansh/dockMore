@@ -10,6 +10,7 @@ import gsap from 'gsap';
 import ProviderIcon from './ProviderIcon';
 import ConfirmModal from './ConfirmModal';
 import { useToast } from '../../context/ToastContext';
+import SyncIntervalDropdown from './SyncIntervalDropdown';
 
 
 export default function CodeProjectCard({
@@ -18,6 +19,8 @@ export default function CodeProjectCard({
   onRemoveProject,
   onPushToGitHub,
   onToggleWatch,
+  onChangeInterval,
+  onDownloadProject,
   busy = false,
   pushPhase = 'idle',
 }) {
@@ -146,7 +149,7 @@ export default function CodeProjectCard({
 
   const handleDownloadZip = () => {
     setMenuOpen(false);
-    showToast('Project snapshots are stored locally; use the DockMore CLI to manage the shadow repository.', 'info');
+    onDownloadProject?.(project);
   };
 
   const handleRemoveConfirm = () => {
@@ -212,16 +215,11 @@ export default function CodeProjectCard({
               {project.name}
             </h3>
 
-            <span
-              style={{
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#8C8C8C',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Every {project.interval} min
-            </span>
+            <SyncIntervalDropdown
+              project={project}
+              disabled={busy}
+              onChange={onChangeInterval}
+            />
           </div>
 
           
@@ -508,6 +506,9 @@ export default function CodeProjectCard({
             <p style={{ fontSize: '13px', fontWeight: 500, color: '#8C8C8C', margin: 0 }}>
               Last snapshot: {project.lastSnapshot}
             </p>
+            <p style={{ fontSize: '12px', fontWeight: 500, color: '#8C8C8C', margin: 0 }}>
+              Cloud sync: {project.sourceArchiveUpdatedAt ? new Date(project.sourceArchiveUpdatedAt).toLocaleString() : 'Waiting for first sync'}
+            </p>
             {watchIsStale && <p style={{ fontSize: '12px', color: '#b45309', margin: 0 }}>Watcher contact lost. Run dockmore repair locally.</p>}
           </div>
 
@@ -600,7 +601,7 @@ export default function CodeProjectCard({
                 whiteSpace: 'nowrap',
               }}
             >
-              Stored locally in:
+              Cloud backup:
             </span>
             <span
               style={{
@@ -612,7 +613,9 @@ export default function CodeProjectCard({
                 whiteSpace: 'nowrap',
               }}
             >
-              DockMore shadow Git
+              {project.accountEmail
+                ? `${project.accountEmail} · dockmore/${project.name} (${project.id.slice(0, 8)})`
+                : 'No cloud account selected'}
             </span>
           </div>
 
@@ -708,6 +711,8 @@ export default function CodeProjectCard({
                   type="button"
                   role="menuitem"
                   onClick={handleDownloadZip}
+                  disabled={!project.sourceArchiveFileId}
+                  title={project.sourceArchiveFileId ? 'Download the latest cloud source ZIP' : 'The first cloud sync has not completed yet'}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -720,7 +725,8 @@ export default function CodeProjectCard({
                     fontSize: '13px',
                     fontWeight: 600,
                     color: '#303030',
-                    cursor: 'pointer',
+                    cursor: project.sourceArchiveFileId ? 'pointer' : 'not-allowed',
+                    opacity: project.sourceArchiveFileId ? 1 : 0.55,
                     transition: 'background 0.12s ease',
                     textAlign: 'left',
                     fontFamily: '"DM Sans", sans-serif',
@@ -733,7 +739,7 @@ export default function CodeProjectCard({
                   }}
                 >
                   <Download style={{ width: '15px', height: '15px', color: '#8C8C8C', strokeWidth: 2 }} />
-                  Local snapshots (CLI)
+                  Download source ZIP
                 </button>
 
                 

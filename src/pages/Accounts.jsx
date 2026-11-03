@@ -125,6 +125,14 @@ export default function Accounts() {
           <div className="col-span-full py-12 text-center text-sm text-muted">
             Loading cloud accounts...
           </div>
+        ) : !error && accounts.length === 0 ? (
+          <div className="col-span-full rounded-figma bg-surface p-8 text-center shadow-panel">
+            <p className="text-sm font-semibold text-ink">No cloud accounts found</p>
+            <p className="mt-1 text-xs text-muted">Connect an account to load your cloud files, or retry the account check.</p>
+            <PillButton variant="ghost" size="sm" icon={RefreshCw} className="mt-4" onClick={() => refetchAccounts().catch(() => {})}>
+              Retry account check
+            </PillButton>
+          </div>
         ) : (
           accounts.map((account) => {
             const isExpired = account.status === 'expired';

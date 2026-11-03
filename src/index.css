@@ -12,6 +12,20 @@
     font: inherit;
   }
 
+  select {
+    color-scheme: light;
+  }
+
+  select option {
+    background-color: #E9E9E9;
+    color: #303030;
+  }
+
+  select option:checked {
+    background-color: #303030;
+    color: #FFFFFF;
+  }
+
   button:disabled {
     cursor: not-allowed;
   }
@@ -171,12 +185,12 @@
     color: #fff !important;
   }
 
-  button.dm-media-tile:hover {
+  .dm-media-tile:hover {
     background-color: #303030;
     color: #fff;
   }
 
-  button.dm-media-tile:hover > div:last-child p {
+  .dm-media-tile:hover > div:last-child p {
     color: #fff;
   }
 }

@@ -1,9 +1,10 @@
 import { apiClient } from '../lib/apiClient';
 import { supabase } from '../lib/supabase';
 import defaultAvatar from '../assets/icons/avatar.svg';
+import { retryTransient } from '../lib/retryTransient';
 
 export async function getAccounts() {
-  const data = await apiClient.get('/api/accounts');
+  const data = await retryTransient(() => apiClient.get('/api/accounts'));
   if (!Array.isArray(data)) throw new Error('Invalid accounts response from server');
   return data;
 }

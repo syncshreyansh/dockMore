@@ -23,8 +23,10 @@ export function CodeProjectsProvider({ children }) {
       const data = await getCodeProjects();
       setProjects(data);
       setError(null);
+      return data;
     } catch (err) {
       setError(err.message);
+      return null;
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,7 @@ import SlideUpModal from './SlideUpModal';
 import PillButton from './PillButton';
 import { useToast } from '../../context/ToastContext';
 
-const INTERVAL_PRESETS = [10, 15, 20, 30];
+const INTERVAL_PRESETS = [5, 10, 15, 20, 25, 30, 60];
 
 export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
   const { showToast } = useToast();
@@ -111,7 +111,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 mb-2">
+          <div className="grid grid-cols-4 gap-2 mb-2">
             {INTERVAL_PRESETS.map((p) => (
               <button
                 key={p}
@@ -128,19 +128,7 @@ export default function TrackProjectModal({ isOpen, onClose, onTrackProject }) {
             ))}
           </div>
 
-          <input
-            type="range"
-            min="10"
-            max="30"
-            step="1"
-            value={interval}
-            onChange={(e) => setInterval(Number(e.target.value))}
-            className="w-full h-1.5 bg-track rounded-lg appearance-none cursor-pointer accent-ink"
-          />
-          <div className="flex justify-between text-[10px] text-muted mt-1 font-mono">
-            <span>10 min (fine-grained)</span>
-            <span>30 min (lighter)</span>
-          </div>
+          <p className="text-[10px] text-muted mt-1">Choose how often this project syncs.</p>
         </div>
 
         

@@ -9,6 +9,7 @@ import GitPushReviewModal from '../components/ui/GitPushReviewModal';
 import { useCodeProjects } from '../hooks/useCodeProjects';
 import { useToast } from '../context/ToastContext';
 import { runLocalCodeAction } from '../api/localCodeControl';
+import { downloadProjectArchive } from '../api/codeProjects';
 
 export default function Code() {
   const {
@@ -20,13 +21,16 @@ export default function Code() {
     refetch,
     refreshSnapshots,
   } = useCodeProjects();
-  const { showToast } = useToast();
+  const { showToast, dismissToast } = useToast();
 
   const [activeProjectForSnapshots, setActiveProjectForSnapshots] = useState(null);
   const [pushReview, setPushReview] = useState(null);
   const [busyProjectId, setBusyProjectId] = useState(null);
+  const [watchOverrides, setWatchOverrides] = useState({});
+  const [intervalOverrides, setIntervalOverrides] = useState({});
   const [pushActivity, setPushActivity] = useState(null);
   const pushReviewRequestRef = useRef(0);
+  const hasWatchingProjects = projects.some((project) => project.watchStatus === 'watching');
 
   useEffect(() => {
     if (!activeProjectForSnapshots) return undefined;
@@ -35,6 +39,12 @@ export default function Code() {
     const timer = setInterval(refresh, 5000);
     return () => clearInterval(timer);
   }, [activeProjectForSnapshots, refreshSnapshots, showToast]);
+
+  useEffect(() => {
+    if (!hasWatchingProjects) return undefined;
+    const timer = window.setInterval(() => { refetch().catch(() => {}); }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [hasWatchingProjects, refetch]);
 
   const handlePush = async (project) => {
     if (busyProjectId) return;
@@ -66,16 +76,77 @@ export default function Code() {
 
   const handleToggleWatch = async (project) => {
     if (busyProjectId) return;
-    setBusyProjectId(project.id);
     const action = project.watchStatus === 'watching' ? 'pause' : 'watch';
+    const nextStatus = action === 'watch' ? 'watching' : 'paused';
+    setBusyProjectId(project.id);
+    setWatchOverrides((current) => ({ ...current, [project.id]: nextStatus }));
     try {
       await runLocalCodeAction(project.id, action);
-      await refetch();
+      refetch().then((updatedProjects) => {
+        if (updatedProjects?.find((item) => item.id === project.id)?.watchStatus === nextStatus) {
+          setWatchOverrides((current) => {
+            const next = { ...current };
+            delete next[project.id];
+            return next;
+          });
+        }
+      }).catch(() => {});
       showToast(action === 'watch' ? `Watching "${project.name}".` : `Paused "${project.name}".`, 'success');
     } catch (err) {
+      setWatchOverrides((current) => {
+        const next = { ...current };
+        delete next[project.id];
+        return next;
+      });
       showToast(err.message || `Could not ${action} this project`, 'error');
     } finally {
       setBusyProjectId(null);
+    }
+  };
+
+  const handleChangeInterval = async (project, minutes) => {
+    const nextInterval = Number(minutes);
+    if (busyProjectId || ![5, 10, 15, 20, 25, 30, 60].includes(nextInterval)) return;
+    setBusyProjectId(project.id);
+    setIntervalOverrides((current) => ({ ...current, [project.id]: nextInterval }));
+    try {
+      await runLocalCodeAction(project.id, 'interval', { minutes: nextInterval });
+      await refetch();
+      setIntervalOverrides((current) => {
+        const next = { ...current };
+        delete next[project.id];
+        return next;
+      });
+      showToast(`Sync interval set to every ${nextInterval} minutes.`, 'success');
+    } catch (err) {
+      setIntervalOverrides((current) => {
+        const next = { ...current };
+        delete next[project.id];
+        return next;
+      });
+      showToast(err.message || 'Could not update the sync interval', 'error');
+    } finally {
+      setBusyProjectId(null);
+    }
+  };
+
+  const handleDownloadProject = async (project) => {
+    const loadingToastId = showToast('Processing download…', 'loading', 0);
+    try {
+      const blob = await downloadProjectArchive(project.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${project.name.replace(/[\\/:*?"<>|]/g, '-') || 'project'}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      dismissToast(loadingToastId);
+      showToast('Source ZIP downloaded.', 'success');
+    } catch (err) {
+      dismissToast(loadingToastId);
+      showToast(err.message || 'Could not download the source ZIP', 'error');
     }
   };
 
@@ -150,7 +221,7 @@ export default function Code() {
       
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted font-medium">
-          {projects.length} tracked projects with shadow snapshotting
+          {projects.length} tracked projects with cloud source backups
         </span>
 
         <PillButton
@@ -173,11 +244,17 @@ export default function Code() {
           projects.map((project) => (
             <CodeProjectCard
               key={project.id}
-              project={project}
+              project={{
+                ...project,
+                ...(watchOverrides[project.id] ? { watchStatus: watchOverrides[project.id] } : {}),
+                ...(intervalOverrides[project.id] ? { interval: intervalOverrides[project.id] } : {}),
+              }}
               busy={busyProjectId === project.id}
               pushPhase={pushActivity?.projectId === project.id ? pushActivity.phase : 'idle'}
               onPushToGitHub={handlePush}
               onToggleWatch={handleToggleWatch}
+              onChangeInterval={handleChangeInterval}
+              onDownloadProject={handleDownloadProject}
               onViewSnapshots={(proj) => setActiveProjectForSnapshots(proj)}
               onRemoveProject={handleRemoveProject}
             />

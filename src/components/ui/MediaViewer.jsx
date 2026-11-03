@@ -4,6 +4,7 @@ import PillButton from './PillButton';
 import useMediaSource from '../../hooks/useMediaSource';
 import { downloadFile } from '../../api/files';
 import { useToast } from '../../context/ToastContext';
+import ThemedSelect from './ThemedSelect';
 
 function clock(seconds) {
   if (!Number.isFinite(seconds)) return '0:00';
@@ -105,7 +106,7 @@ export default function MediaViewer({ file, onClose, onPrevious, onNext }) {
               <div className="ml-auto flex items-center gap-2">
                 <button type="button" onClick={() => { if (!mediaRef.current) return; mediaRef.current.muted = !mediaRef.current.muted; setMuted(mediaRef.current.muted); }} aria-label={muted ? 'Unmute' : 'Mute'} className="rounded-lg p-1 hover:bg-sidebar">{muted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
                 <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(event) => changeVolume(event.target.value)} aria-label="Volume" className="dm-media-range w-16 sm:w-24" />
-                <select aria-label="Playback speed" value={speed} onChange={(event) => { const next = Number(event.target.value); setSpeed(next); if (mediaRef.current) mediaRef.current.playbackRate = next; }} className="rounded-lg bg-sidebar px-2 py-1 text-xs font-medium"><option value="0.5">0.5×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+                <ThemedSelect fullWidth={false} aria-label="Playback speed" value={speed} onChange={(event) => { const next = Number(event.target.value); setSpeed(next); if (mediaRef.current) mediaRef.current.playbackRate = next; }} className="inline-flex" selectClassName="rounded-lg bg-[#E9E9E9] py-1 pl-2 pr-7 text-xs font-medium"><option value="0.5">0.5×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></ThemedSelect>
                 <button type="button" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} className="rounded-lg p-1 hover:bg-sidebar">{fullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}</button>
               </div>
             </div>

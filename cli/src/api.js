@@ -4,8 +4,9 @@ import { API_BASE, getToken } from './config.js';
 
 export async function request(endpoint, options = {}) {
   const token = getToken();
+  const streamingBody = options.body && typeof options.body.pipe === 'function';
   const headers = {
-    'Content-Type': 'application/json',
+    ...(!streamingBody ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
@@ -43,10 +44,11 @@ export async function request(endpoint, options = {}) {
 
 export const api = {
   get: (endpoint) => request(endpoint, { method: 'GET' }),
-  post: (endpoint, body) =>
+  post: (endpoint, body, options = {}) =>
     request(endpoint, {
+      ...options,
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
+      body: body && typeof body.pipe === 'function' ? body : body ? JSON.stringify(body) : undefined,
     }),
   patch: (endpoint, body) =>
     request(endpoint, {

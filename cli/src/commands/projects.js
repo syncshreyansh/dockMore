@@ -5,10 +5,12 @@ import { api } from '../api.js';
 import { getAllProjects, getProject, removeProject, setProject } from '../config.js';
 import { requireAuth } from '../utils.js';
 import { daemonState, stopDaemon } from '../daemonControl.js';
+import { withProgress } from '../progress.js';
 
 export async function listProjects() {
   requireAuth();
-  const remote = (await api.get('/api/code-projects')).projects || [];
+  const response = await withProgress('Loading registered projects', () => api.get('/api/code-projects'), { success: false, failure: false });
+  const remote = response.projects || [];
   const local = getAllProjects();
   remote.forEach((project) => {
     const match = Object.entries(local).find(([, value]) => value.projectId === project.id);
@@ -21,10 +23,12 @@ export async function untrack() {
   const cwd = process.cwd();
   const project = getProject(cwd);
   if (!project) throw new Error('Current directory has no local DockMore link');
-  if (project.watchPid) await stopDaemon(project);
-  try { await api.patch(`/api/code-projects/${project.projectId}`, { watch_status: 'paused' }); }
-  catch (err) { if (err.status !== 404) throw err; }
-  removeProject(cwd);
+  await withProgress('Removing local project link', async () => {
+    if (project.watchPid) await stopDaemon(project);
+    try { await api.patch(`/api/code-projects/${project.projectId}`, { watch_status: 'paused' }); }
+    catch (err) { if (err.status !== 404) throw err; }
+    removeProject(cwd);
+  }, { success: false, failure: false });
   console.log(chalk.green('Local project link removed. Shadow snapshots remain at:'));
   console.log(`  ${project.shadowRepoPath}`);
 }
@@ -33,7 +37,7 @@ export async function relink(id, shadowRepoPath) {
   requireAuth();
   const cwd = process.cwd();
   if (getProject(cwd)) throw new Error('Current directory is already linked; run untrack first');
-  const remote = await api.get(`/api/code-projects/${id}`);
+  const remote = await withProgress('Loading project details', () => api.get(`/api/code-projects/${id}`), { success: false, failure: false });
   if (!shadowRepoPath || !fs.existsSync(path.join(shadowRepoPath, 'HEAD'))) throw new Error('Provide an existing shadow Git repository with --shadow <path>');
   setProject(cwd, { projectId: remote.id, shadowRepoPath: path.resolve(shadowRepoPath), watchPid: null, daemonId: null, interval: remote.snapshot_interval_minutes || 15 });
   console.log(chalk.green(`Linked ${cwd} to ${remote.name}.`));
@@ -57,11 +61,14 @@ export async function repair() {
     fs.rmSync(recoveryPath);
     console.log(chalk.green(`Recovered ${recovered.length} queued snapshot record(s).`));
   }
-  const remote = await api.get(`/api/code-projects/${project.projectId}`);
-  const state = daemonState(project);
-  if (remote.watch_status === 'watching' && state !== 'running') {
-    await api.patch(`/api/code-projects/${project.projectId}`, { watch_status: 'paused' });
-  }
-  if (state === 'stopped') setProject(cwd, { watchPid: null, daemonId: null });
+  const state = await withProgress('Checking project link and watcher', async () => {
+    const remote = await api.get(`/api/code-projects/${project.projectId}`);
+    const watcher = daemonState(project);
+    if (remote.watch_status === 'watching' && watcher !== 'running') {
+      await api.patch(`/api/code-projects/${project.projectId}`, { watch_status: 'paused' });
+    }
+    if (watcher === 'stopped') setProject(cwd, { watchPid: null, daemonId: null });
+    return watcher;
+  }, { success: false, failure: false });
   console.log(chalk.green(`Project link is valid. Watcher: ${state}.`));
 }

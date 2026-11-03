@@ -4,11 +4,13 @@ import { promisify } from 'util';
 import { api } from '../api.js';
 import { getProject, getToken } from '../config.js';
 import { daemonState } from '../daemonControl.js';
+import { withProgress } from '../progress.js';
 
 const exec = promisify(execFile);
 export async function doctor(options = {}) {
   const findings = [];
   const add = (name, ok, detail) => findings.push({ name, ok, detail });
+  await withProgress('Checking CLI and project health', async () => {
   try { const { stdout } = await exec('git', ['--version']); add('git', true, stdout.trim()); }
   catch (err) { add('git', false, err.message); }
   try { await api.get('/api/health'); add('backend', true, 'reachable'); }
@@ -28,6 +30,7 @@ export async function doctor(options = {}) {
       add('gitRemote', Boolean(stdout.trim()), stdout.trim() || 'none');
     } catch (err) { add('gitRemote', false, err.message); }
   }
+  }, { success: false, failure: false });
   const ok = findings.every((finding) => finding.ok);
   if (options.json) console.log(JSON.stringify({ ok, findings }, null, 2));
   else findings.forEach((finding) => console.log(`${finding.ok ? 'OK' : 'ERROR'} ${finding.name}: ${finding.detail}`));

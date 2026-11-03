@@ -11,6 +11,8 @@ const { promisify } = require('util');
 const { pathToFileURL } = require('url');
 const db = require('../db/connection');
 const { handleGitpushTrigger } = require('../agents/orchestrator');
+const { getProvider } = require('../providers');
+const { getValidAccessToken } = require('../auth/tokenManager');
 const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
@@ -57,6 +59,27 @@ function isValidUuid(str) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
+async function getOrCreateFolder(provider, accessToken, name, parentId) {
+  const children = await provider.listFiles(accessToken, parentId || 'root');
+  const existing = children.find((file) => file.isFolder && file.name === name);
+  if (existing) return existing.id;
+  return (await provider.createFolder(accessToken, name, parentId)).id;
+}
+
+async function ensureProjectCloudFolder(account, project) {
+  const provider = getProvider(account.provider);
+  if (!provider.listFiles || !provider.createFolder) throw new Error('This cloud provider does not support project source archives yet');
+  const accessToken = await getValidAccessToken(account.id);
+  const rootFolderId = await getOrCreateFolder(provider, accessToken, 'dockmore');
+  const projectFolderName = `${project.name} (${project.id.slice(0, 8)})`;
+  return getOrCreateFolder(provider, accessToken, projectFolderName, rootFolderId);
+}
+
+function safeArchiveName(name) {
+  const safe = String(name || 'project').replace(/[\\/:*?"<>|\r\n]/g, '-').trim();
+  return `${safe || 'project'}.zip`;
+}
+
 
 
 
@@ -74,18 +97,19 @@ router.post('/', async (req, res) => {
   }
 
   if (snapshot_interval_minutes !== undefined) {
-    const interval = parseInt(snapshot_interval_minutes, 10);
-    if (!Number.isInteger(interval) || interval < 1) {
-      return res.status(400).json({ error: '`snapshot_interval_minutes` must be a positive integer' });
+    const interval = Number(snapshot_interval_minutes);
+    if (![5, 10, 15, 20, 25, 30, 60].includes(interval)) {
+      return res.status(400).json({ error: '`snapshot_interval_minutes` must be one of 5, 10, 15, 20, 25, 30, or 60' });
     }
   }
 
   try {
+    let backupAccount = null;
     if (backup_account_id) {
-      const account = await db('cloud_accounts').where({ id: backup_account_id, user_id: req.user.id }).first();
-      if (!account) return res.status(404).json({ error: `cloud_account not found or not owned by user: ${backup_account_id}` });
+      backupAccount = await db('cloud_accounts').where({ id: backup_account_id, user_id: req.user.id }).first();
+      if (!backupAccount) return res.status(404).json({ error: `cloud_account not found or not owned by user: ${backup_account_id}` });
     }
-    const [project] = await db('code_projects')
+    let [project] = await db('code_projects')
       .insert({
         user_id: req.user.id,
         name: name.trim(),
@@ -93,11 +117,22 @@ router.post('/', async (req, res) => {
         branch: typeof branch === 'string' ? branch.slice(0, 255) : null,
         backup_account_id: backup_account_id || null,
         snapshot_interval_minutes: snapshot_interval_minutes
-          ? parseInt(snapshot_interval_minutes, 10)
+          ? Number(snapshot_interval_minutes)
           : 15,
         watch_status: 'paused',
       })
       .returning('*');
+
+    if (backupAccount) {
+      try {
+        const cloudFolderId = await ensureProjectCloudFolder(backupAccount, project);
+        [project] = await db('code_projects').where({ id: project.id, user_id: req.user.id })
+          .update({ cloud_folder_id: cloudFolderId }).returning('*');
+      } catch (err) {
+        await db('code_projects').where({ id: project.id, user_id: req.user.id }).delete();
+        throw err;
+      }
+    }
 
     return res.status(201).json(project);
   } catch (err) {
@@ -127,6 +162,10 @@ router.get('/', async (req, res) => {
         'cp.last_snapshot_at',
         'cp.last_commit_message',
         'cp.last_commit_at',
+        'cp.cloud_folder_id',
+        'cp.source_archive_file_id',
+        'cp.source_archive_updated_at',
+        'cp.source_archive_size_bytes',
         'cp.created_at',
         'ca.id        as backup_account_id',
         'ca.provider  as backup_provider',
@@ -184,6 +223,71 @@ router.get('/:id', async (req, res) => {
 
 
 
+router.get('/:id/source-archive', async (req, res) => {
+  try {
+    const project = await db('code_projects').where({ id: req.params.id, user_id: req.user.id }).first();
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!project.backup_account_id || !project.source_archive_file_id) {
+      return res.status(404).json({ error: 'No cloud source archive is available yet. Initialize the project and start Watch to sync it.' });
+    }
+    const account = await db('cloud_accounts').where({ id: project.backup_account_id, user_id: req.user.id }).first();
+    if (!account) return res.status(404).json({ error: 'Backup cloud account is no longer connected' });
+    const provider = getProvider(account.provider);
+    const stream = await provider.downloadFile(await getValidAccessToken(account.id), project.source_archive_file_id);
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(safeArchiveName(project.name))}`,
+      'Cache-Control': 'no-store',
+    });
+    stream.on('error', (err) => {
+      console.error('[project source archive download]', err.message);
+      if (!res.headersSent) res.status(502).json({ error: 'Cloud source archive download failed' });
+      else res.destroy(err);
+    });
+    stream.pipe(res);
+  } catch (err) {
+    console.error(`[code-projects GET /${req.params.id}/source-archive]`, err.message);
+    if (!res.headersSent) return res.status(502).json({ error: 'Cloud source archive download failed', detail: err.message });
+    return res.destroy(err);
+  }
+});
+
+router.post('/:id/source-archive', async (req, res) => {
+  try {
+    const project = await db('code_projects').where({ id: req.params.id, user_id: req.user.id }).first();
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!project.backup_account_id || !project.cloud_folder_id) {
+      return res.status(409).json({ error: 'Choose a connected backup account before syncing project source.' });
+    }
+    if (!req.is('application/zip')) return res.status(415).json({ error: 'Project source must be uploaded as a ZIP archive' });
+    const contentLength = Number(req.get('content-length'));
+    if (Number.isFinite(contentLength) && contentLength > 5 * 1024 * 1024 * 1024) {
+      return res.status(413).json({ error: 'Project ZIP exceeds the 5 GB upload limit' });
+    }
+    const account = await db('cloud_accounts').where({ id: project.backup_account_id, user_id: req.user.id }).first();
+    if (!account) return res.status(404).json({ error: 'Backup cloud account is no longer connected' });
+    const provider = getProvider(account.provider);
+    const uploaded = await provider.uploadFile(await getValidAccessToken(account.id), req, {
+      fileId: project.source_archive_file_id || undefined,
+      name: safeArchiveName(project.name),
+      mimeType: 'application/zip',
+      parentId: project.cloud_folder_id,
+    });
+    const updatedAt = new Date();
+    const [updated] = await db('code_projects').where({ id: project.id, user_id: req.user.id }).update({
+      source_archive_file_id: uploaded.id,
+      source_archive_updated_at: updatedAt,
+      source_archive_size_bytes: Number.isFinite(contentLength) ? contentLength : null,
+    }).returning('id');
+    if (!updated) return res.status(404).json({ error: 'Project was removed during cloud upload' });
+    return res.status(201).json({ success: true, fileId: uploaded.id, updatedAt: updatedAt.toISOString(), sizeBytes: contentLength || null });
+  } catch (err) {
+    console.error(`[code-projects POST /${req.params.id}/source-archive]`, err.message);
+    return res.status(502).json({ error: 'Cloud source archive upload failed', detail: err.message });
+  }
+});
+
+
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
   const { watch_status, snapshot_interval_minutes, backup_account_id } = req.body;
@@ -203,9 +307,9 @@ router.patch('/:id', async (req, res) => {
   }
 
   if (snapshot_interval_minutes !== undefined) {
-    const interval = parseInt(snapshot_interval_minutes, 10);
-    if (!Number.isInteger(interval) || interval < 1) {
-      return res.status(400).json({ error: '`snapshot_interval_minutes` must be a positive integer' });
+    const interval = Number(snapshot_interval_minutes);
+    if (![5, 10, 15, 20, 25, 30, 60].includes(interval)) {
+      return res.status(400).json({ error: '`snapshot_interval_minutes` must be one of 5, 10, 15, 20, 25, 30, or 60' });
     }
   }
 
@@ -216,19 +320,33 @@ router.patch('/:id', async (req, res) => {
   }
 
   try {
-    const projectExists = await db('code_projects').where({ id, user_id: req.user.id }).first('id');
+    const projectExists = await db('code_projects').where({ id, user_id: req.user.id }).first();
     if (!projectExists) return res.status(404).json({ error: `Project not found: ${id}` });
+    let backupAccount = null;
     if (backup_account_id !== undefined && backup_account_id !== null) {
-      const account = await db('cloud_accounts').where({ id: backup_account_id, user_id: req.user.id }).first('id');
-      if (!account) return res.status(404).json({ error: `cloud_account not found or not owned by user: ${backup_account_id}` });
+      backupAccount = await db('cloud_accounts').where({ id: backup_account_id, user_id: req.user.id }).first();
+      if (!backupAccount) return res.status(404).json({ error: `cloud_account not found or not owned by user: ${backup_account_id}` });
     }
     const updates = {};
     if (watch_status !== undefined) {
       updates.watch_status = watch_status;
       updates.last_heartbeat_at = watch_status === 'watching' ? new Date() : null;
     }
-    if (snapshot_interval_minutes !== undefined) updates.snapshot_interval_minutes = parseInt(snapshot_interval_minutes, 10);
-    if (backup_account_id !== undefined)         updates.backup_account_id = backup_account_id; 
+    if (snapshot_interval_minutes !== undefined) updates.snapshot_interval_minutes = Number(snapshot_interval_minutes);
+    if (backup_account_id !== undefined) {
+      updates.backup_account_id = backup_account_id;
+      if (!backup_account_id) {
+        updates.cloud_folder_id = null;
+        updates.source_archive_file_id = null;
+        updates.source_archive_updated_at = null;
+        updates.source_archive_size_bytes = null;
+      } else if (backup_account_id !== projectExists.backup_account_id || !projectExists.cloud_folder_id) {
+        updates.cloud_folder_id = await ensureProjectCloudFolder(backupAccount, projectExists);
+        updates.source_archive_file_id = null;
+        updates.source_archive_updated_at = null;
+        updates.source_archive_size_bytes = null;
+      }
+    }
 
     const [updated] = await db('code_projects')
       .where({ id, user_id: req.user.id })
@@ -402,11 +520,25 @@ router.post('/:id/generate-commit', async (req, res) => {
   }
 });
 
+router.post('/:id/local/interval', async (req, res) => {
+  try {
+    const local = await getLocalProject(req, req.params.id);
+    if (local.error) return res.status(local.status).json({ error: local.error });
+    await execFileAsync(process.execPath, [cliEntryPath, 'interval', String(req.body?.minutes ?? '')], {
+      cwd: local.project.local_path, windowsHide: true, timeout: 15000, maxBuffer: 1024 * 1024,
+    });
+    return res.json({ interval: Number(req.body.minutes) });
+  } catch (err) {
+    return res.status(400).json({ error: 'Could not update local sync interval', detail: err.stderr?.trim() || err.message });
+  }
+});
+
 router.post('/:id/local/watch', async (req, res) => {
   try {
     const local = await getLocalProject(req, req.params.id);
     if (local.error) return res.status(local.status).json({ error: local.error });
-    const interval = Number(local.project.snapshot_interval_minutes) || 15;
+    const requestedInterval = Number(local.project.snapshot_interval_minutes) || 15;
+    const interval = [5, 10, 15, 20, 25, 30, 60].includes(requestedInterval) ? requestedInterval : 15;
     await execFileAsync(process.execPath, [cliEntryPath, 'watch', '--interval', String(interval)], {
       cwd: local.project.local_path, windowsHide: true, timeout: 70000, maxBuffer: 1024 * 1024,
     });
